@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- New Vibrant Color Palette (Electric Indigo & Soft Cyan) -->
+    <color name="primary_light">#F0F3FF</color>
+    <color name="primary_200">#C7D2FE</color>
+    <color name="primary_500">#6366F1</color> <!-- Indigo 500 -->
+    <color name="primary_600">#4F46E5</color> <!-- Indigo 600 -->
+    <color name="primary_700">#4338CA</color> <!-- Indigo 700 -->
+
+    <color name="accent_vibrant">#06B6D4</color> <!-- Cyan 500 -->
+    <color name="accent_soft">#ECFEFF</color>
+
+    <color name="slate_50">#F8FAFC</color>
+    <color name="slate_100">#F1F5F9</color>
+    <color name="slate_200">#E2E8F0</color>
+    <color name="slate_300">#CBD5E1</color>
+    <color name="slate_400">#94A3B8</color>
+    <color name="slate_500">#64748B</color>
+    <color name="slate_600">#475569</color>
+    <color name="slate_700">#334155</color>
+    <color name="slate_800">#1E293B</color>
+    <color name="slate_900">#0F172A</color>
+
+    <color name="amber_400">#FBBF24</color>
+    <color name="amber_500">#F59E0B</color>
+    <color name="green_100">#DCFCE7</color>
+    <color name="green_600">#16A34A</color>
+    <color name="red_50">#FEF2F2</color>
+    <color name="red_600">#DC2626</color>
+
+    <!-- Legacy Compatibility -->
+    <color name="violet_50">@color/primary_light</color>
+    <color name="violet_100">@color/primary_200</color>
+    <color name="violet_400">@color/primary_500</color>
+    <color name="violet_500">@color/primary_600</color>
+    <color name="violet_600">@color/primary_600</color>
+    <color name="violet_700">@color/primary_700</color>
+</resources>

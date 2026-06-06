@@ -1,0 +1,31 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.Fonoss" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <item name="colorPrimary">@color/primary_600</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/accent_vibrant</item>
+        <item name="android:windowBackground">@color/white</item>
+        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="Theme.Fonoss" parent="Base.Theme.Fonoss" />
+
+    <style name="CircleImage">
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="RoundedImage">
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <style name="RoundedCard">
+        <item name="cornerSize">32dp</item>
+    </style>
+
+    <style name="Theme.Fonoss.VibrantStatusBar" parent="Theme.Fonoss">
+        <item name="android:statusBarColor">@color/primary_600</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

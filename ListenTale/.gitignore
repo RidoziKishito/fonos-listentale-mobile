@@ -1,0 +1,59 @@
+# ============ Android Studio & Gradle ============
+
+# Gradle files
+.gradle/
+*.gradle
+build/
+
+# IDE configuration files (Android Studio đặc thù cho mỗi máy)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Chứa cấu hình IDE cục bộ
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+
+# ============ Local Properties ============
+
+# KHÔNG ĐẾN CHỖ NÀO! File này chứa đường dẫn SDK cục bộ
+/local.properties
+local.properties
+
+# ============ Build Output & Generated Files ============
+
+/build
+/captures
+app/build/
+*/build/
+
+# Generated files
+.externalNativeBuild
+.cxx
+
+# ============ OS & Editor Files ============
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Editor artifacts
+.vscode/
+
+# ============ Frontend (Audio Book App Design) ============
+
+node_modules/
+dist/
+.vite/

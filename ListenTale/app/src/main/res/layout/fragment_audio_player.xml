@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/slate_900">
+
+    <ImageView
+        android:id="@+id/image_player_bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0.3"
+        android:scaleType="centerCrop"
+        android:src="@android:drawable/ic_menu_gallery" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/gradient_player_overlay" />
+
+    <ImageButton
+        android:id="@+id/button_player_back"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_margin="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_revert"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/white" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-bold"
+        android:text="Now Playing"
+        android:textColor="@color/white"
+        android:alpha="0.8"
+        app:layout_constraintBottom_toBottomOf="@id/button_player_back"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/button_player_back" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card_artwork"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_margin="48dp"
+        app:cardCornerRadius="32dp"
+        app:cardElevation="24dp"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/button_player_back"
+        app:layout_constraintBottom_toTopOf="@id/text_player_title"
+        app:strokeWidth="0dp">
+
+        <ImageView
+            android:id="@+id/image_player_artwork"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@android:drawable/ic_menu_gallery" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:id="@+id/text_player_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:fontFamily="sans-serif-black"
+        android:text="Book Title"
+        android:textColor="@color/white"
+        android:textSize="24sp"
+        android:paddingHorizontal="24dp"
+        android:gravity="center"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/card_artwork" />
+
+    <TextView
+        android:id="@+id/text_player_author"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Author Name"
+        android:textColor="@color/slate_400"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/text_player_title" />
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/player_slider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="32dp"
+        android:value="35"
+        android:valueFrom="0"
+        android:valueTo="100"
+        app:layout_constraintTop_toBottomOf="@id/text_player_author"
+        app:thumbColor="@color/white"
+        app:trackColorActive="@color/violet_500"
+        app:trackColorInactive="#33FFFFFF" />
+
+    <TextView
+        android:id="@+id/text_player_current_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="00:00"
+        android:textColor="@color/slate_400"
+        android:textSize="12sp"
+        app:layout_constraintStart_toStartOf="@id/player_slider"
+        app:layout_constraintTop_toBottomOf="@id/player_slider" />
+
+    <TextView
+        android:id="@+id/text_player_total_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="45:20"
+        android:textColor="@color/slate_400"
+        android:textSize="12sp"
+        app:layout_constraintEnd_toEndOf="@id/player_slider"
+        app:layout_constraintTop_toBottomOf="@id/player_slider" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/player_slider"
+        app:layout_constraintVertical_bias="0.4">
+
+        <!-- Vùng Đồng hồ: Chiếm không gian bên trái -->
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1">
+            <ImageButton
+                android:id="@+id/button_player_timer"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_lock_idle_alarm"
+                app:tint="@color/slate_400" />
+            <TextView
+                android:id="@+id/text_timer_countdown"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:textColor="@color/violet_500"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <!-- Nhóm nút chính: Luôn ở giữa -->
+        <ImageButton
+            android:id="@+id/button_player_prev"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:scaleType="fitCenter"
+            android:src="@android:drawable/ic_media_previous"
+            app:tint="@color/white" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_play_pause"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:src="@android:drawable/ic_media_play"
+            app:backgroundTint="@color/violet_500"
+            app:fabCustomSize="80dp"
+            app:maxImageSize="40dp"
+            app:tint="@color/white" />
+
+        <ImageButton
+            android:id="@+id/button_player_next"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:scaleType="fitCenter"
+            android:src="@android:drawable/ic_media_next"
+            app:tint="@color/white" />
+
+        <!-- Vùng Tốc độ: Chiếm không gian bên phải -->
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1">
+            <ImageButton
+                android:id="@+id/button_player_speed"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_slideshow"
+                app:tint="@color/slate_400" />
+            <TextView
+                android:id="@+id/text_current_speed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="1.0x"
+                android:textColor="@color/slate_400"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone"/>
+        </FrameLayout>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

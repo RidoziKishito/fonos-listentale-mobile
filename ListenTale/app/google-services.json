@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "684065090542",
+    "project_id": "fonoss-9bc5e",
+    "storage_bucket": "fonoss-9bc5e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:684065090542:android:a8c95b89a86b63a5687cff",
+        "android_client_info": {
+          "package_name": "com.example.fonoss"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBq0T0CZwPT9ym8k70f9HSyQh8f_v3aRaI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
