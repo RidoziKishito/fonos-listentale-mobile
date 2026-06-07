@@ -72,9 +72,10 @@ public class AudioPlayerFragment extends Fragment {
             AudioService.LocalBinder binder = (AudioService.LocalBinder) service;
             audioService = binder.getService();
             isBound = true;
+
+            Book serviceBook = audioService.getCurrentBook();
             
             if (currentBook != null) {
-                Book serviceBook = audioService.getCurrentBook();
                 if (serviceBook != null && serviceBook.getId().equals(currentBook.getId())) {
                     currentBook = serviceBook;
                     isPositionRestored = true;
@@ -91,6 +92,10 @@ public class AudioPlayerFragment extends Fragment {
                         }
                     }
                 }
+            } else if (serviceBook != null) {
+                // Trường hợp App bị kill và mở lại từ thông báo
+                currentBook = serviceBook;
+                isPositionRestored = true;
             }
 
             if (currentBook != null) bindBookData();
