@@ -18,14 +18,30 @@ import androidx.navigation.Navigation;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
+import com.google.firebase.auth.GoogleAuthProvider;
+
+import androidx.credentials.CredentialManager;
+import androidx.credentials.GetCredentialRequest;
+import androidx.credentials.GetCredentialResponse;
+import androidx.credentials.Credential;
+import androidx.credentials.CustomCredential;
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import android.widget.Toast;
 
 public class LoginFragment extends Fragment {
 
     private FirebaseAuth mAuth;
     private UserViewModel userViewModel;
+    private CredentialManager credentialManager;
+    private final Executor executor = Executors.newSingleThreadExecutor();
 
     @Nullable
     @Override
@@ -39,12 +55,14 @@ public class LoginFragment extends Fragment {
 
         mAuth = FirebaseAuth.getInstance();
         userViewModel = new ViewModelProvider(requireActivity()).get(UserViewModel.class);
+        credentialManager = CredentialManager.create(requireContext());
 
         TextInputLayout emailLayout = view.findViewById(R.id.input_email_layout);
         TextInputLayout passwordLayout = view.findViewById(R.id.input_password_layout);
         TextInputEditText inputEmail = view.findViewById(R.id.input_email);
         TextInputEditText inputPassword = view.findViewById(R.id.input_password);
         MaterialButton buttonSignIn = view.findViewById(R.id.button_sign_in);
+        View buttonGoogle = view.findViewById(R.id.button_google_sign_in);
 
         TextWatcher authWatcher = new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -77,6 +95,55 @@ public class LoginFragment extends Fragment {
         view.findViewById(R.id.text_signup).setOnClickListener(v -> 
             Navigation.findNavController(v).navigate(R.id.action_loginFragment_to_registerFragment)
         );
+
+        buttonGoogle.setOnClickListener(v -> performGoogleSignIn());
+    }
+
+    private void performGoogleSignIn() {
+        GetGoogleIdOption googleIdOption = new GetGoogleIdOption.Builder()
+                .setFilterByAuthorizedAccounts(false)
+                .setServerClientId(getString(R.string.default_web_client_id))
+                .build();
+
+        GetCredentialRequest request = new GetCredentialRequest.Builder()
+                .addCredentialOption(googleIdOption)
+                .build();
+
+        credentialManager.getCredentialAsync(requireActivity(), request, null, executor, new androidx.credentials.CredentialManagerCallback<GetCredentialResponse, androidx.credentials.exceptions.GetCredentialException>() {
+            @Override
+            public void onResult(GetCredentialResponse result) {
+                handleGoogleSignInResult(result);
+            }
+
+            @Override
+            public void onError(@NonNull androidx.credentials.exceptions.GetCredentialException e) {
+                requireActivity().runOnUiThread(() -> 
+                    Toast.makeText(getContext(), "Google Sign In failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+        });
+    }
+
+    private void handleGoogleSignInResult(GetCredentialResponse result) {
+        Credential credential = result.getCredential();
+        if (credential instanceof CustomCredential && credential.getType().equals(GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL)) {
+            try {
+                GoogleIdTokenCredential googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.getData());
+                String idToken = googleIdTokenCredential.getIdToken();
+                AuthCredential authCredential = GoogleAuthProvider.getCredential(idToken, null);
+                
+                mAuth.signInWithCredential(authCredential)
+                        .addOnCompleteListener(task -> {
+                            if (task.isSuccessful()) {
+                                userViewModel.fetchUserData();
+                                Navigation.findNavController(requireView()).navigate(R.id.action_loginFragment_to_booksFragment);
+                            } else {
+                                Toast.makeText(getContext(), "Auth failed", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void performLogin(TextInputEditText email, TextInputEditText password, 
