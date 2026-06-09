@@ -5,7 +5,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -117,7 +116,7 @@ public class BooksFragment extends Fragment {
                 trendingAdapter.notifyDataSetChanged();
                 recommendedAdapter.notifyDataSetChanged();
             } else {
-                Toast.makeText(getContext(), "Error fetching books", Toast.LENGTH_SHORT).show();
+                UiNotifier.error(getContext(), "Could not load books");
             }
         });
     }

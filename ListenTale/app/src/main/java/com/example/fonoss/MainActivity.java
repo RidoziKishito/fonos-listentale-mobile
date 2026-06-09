@@ -49,9 +49,10 @@ public class MainActivity extends AppCompatActivity {
                 if (destination.getId() == R.id.welcomeFragment || 
                     destination.getId() == R.id.loginFragment ||
                     destination.getId() == R.id.registerFragment ||
-                    destination.getId() == R.id.audioPlayerFragment ||
+                    destination.getId() == R.id.seeAllFragment ||
                     destination.getId() == R.id.bookDetailFragment ||
-                    destination.getId() == R.id.ebookReaderFragment) {
+                    destination.getId() == R.id.ebookReaderFragment ||
+                    destination.getId() == R.id.audioPlayerFragment) {
                     bottomNav.setVisibility(View.GONE);
                 } else {
                     bottomNav.setVisibility(View.VISIBLE);

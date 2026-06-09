@@ -10,7 +10,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -124,7 +123,7 @@ public class RegisterFragment extends Fragment {
             @Override
             public void onError(@NonNull androidx.credentials.exceptions.GetCredentialException e) {
                 requireActivity().runOnUiThread(() -> 
-                    Toast.makeText(getContext(), "Google Sign In failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                    UiNotifier.error(getContext(), "Google sign in failed"));
             }
         });
     }
@@ -148,7 +147,7 @@ public class RegisterFragment extends Fragment {
                                     Navigation.findNavController(requireView()).navigate(R.id.action_registerFragment_to_booksFragment);
                                 }
                             } else {
-                                Toast.makeText(getContext(), "Auth failed", Toast.LENGTH_SHORT).show();
+                                UiNotifier.error(getContext(), "Authentication failed");
                             }
                         });
             } catch (Exception e) {
@@ -212,12 +211,12 @@ public class RegisterFragment extends Fragment {
                         db.collection("users").document(uid).set(user)
                                 .addOnSuccessListener(aVoid -> {
                                     userViewModel.fetchUserData();
-                                    Toast.makeText(getContext(), "Registration successful!", Toast.LENGTH_SHORT).show();
+                                    UiNotifier.success(getContext(), "Registration successful");
                                     Navigation.findNavController(name).navigate(R.id.action_registerFragment_to_booksFragment);
                                 })
-                                .addOnFailureListener(e -> Toast.makeText(getContext(), "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                                .addOnFailureListener(e -> UiNotifier.error(getContext(), "Registration failed"));
                     } else {
-                        Toast.makeText(getContext(), "Auth Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        UiNotifier.error(getContext(), "Authentication failed");
                     }
                 });
     }

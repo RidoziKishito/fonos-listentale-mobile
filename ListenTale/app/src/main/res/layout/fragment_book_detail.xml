@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white">
+    android:background="@drawable/bg_app_gradient">
 
     <ImageView
         android:id="@+id/image_cover_bg"
@@ -28,7 +28,7 @@
             android:layout_height="48dp"
             android:layout_margin="16dp"
             android:background="@drawable/bg_circle_white_alpha"
-            android:src="@android:drawable/ic_menu_revert"
+            android:src="@drawable/ic_detail_back"
             app:tint="@color/slate_900" />
 
         <View
@@ -52,7 +52,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@drawable/bg_circle_white_alpha"
-                    android:src="@android:drawable/stat_sys_download"
+                    android:src="@drawable/ic_detail_download"
                     app:tint="@color/slate_900" />
 
                 <ProgressBar
@@ -69,7 +69,7 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:background="@drawable/bg_circle_white_alpha"
-                android:src="@android:drawable/btn_star_big_off"
+                android:src="@drawable/ic_detail_heart"
                 app:tint="@color/slate_900" />
         </LinearLayout>
     </LinearLayout>
@@ -114,7 +114,7 @@
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@color/violet_50"
+                    android:background="@drawable/bg_rating_pill"
                     android:gravity="center"
                     android:orientation="horizontal"
                     android:paddingHorizontal="10dp"
@@ -250,12 +250,17 @@
 
     <LinearLayout
         android:id="@+id/action_bar"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_island_glass"
+        android:elevation="12dp"
         android:orientation="horizontal"
-        android:padding="16dp"
-        app:layout_constraintBottom_toBottomOf="parent">
+        android:padding="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/button_listen"
@@ -263,7 +268,7 @@
             android:layout_height="56dp"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
-            android:backgroundTint="@color/violet_600"
+            android:backgroundTint="@color/primary_600"
             android:text="Listen"
             android:textAllCaps="false"
             android:textStyle="bold"
@@ -277,14 +282,14 @@
             android:layout_height="56dp"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
-            android:backgroundTint="@color/violet_50"
+            android:backgroundTint="@color/primary_light"
             android:text="Read"
             android:textAllCaps="false"
-            android:textColor="@color/violet_600"
+            android:textColor="@color/primary_700"
             android:textStyle="bold"
             app:cornerRadius="16dp"
             app:icon="@android:drawable/ic_menu_agenda"
-            app:iconTint="@color/violet_600" />
+            app:iconTint="@color/primary_700" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

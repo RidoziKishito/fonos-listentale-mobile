@@ -16,6 +16,7 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 import androidx.media.app.NotificationCompat.MediaStyle;
 
 public class AudioService extends Service {
@@ -164,7 +165,9 @@ public class AudioService extends Service {
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID, "Audio Playback", NotificationManager.IMPORTANCE_LOW);
+                    CHANNEL_ID, "ListenTale Playback", NotificationManager.IMPORTANCE_LOW);
+            channel.setDescription("Audio controls while listening");
+            channel.setShowBadge(false);
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) manager.createNotificationChannel(channel);
         }
@@ -185,14 +188,21 @@ public class AudioService extends Service {
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_notification_transparent)
+                .setSmallIcon(R.drawable.ic_nav_books)
                 .setContentTitle(currentBook != null ? currentBook.getTitle() : "ListenTale")
-                .setContentText(currentBook != null ? currentBook.getAuthor() : "Player Ready")
+                .setContentText(currentBook != null ? "by " + currentBook.getAuthor() : "Ready to listen")
+                .setSubText("ListenTale")
                 .setContentIntent(pendingIntent)
                 .addAction(android.R.drawable.ic_media_previous, "Previous", null)
                 .addAction(playIcon, "Play/Pause", playPendingIntent)
                 .addAction(android.R.drawable.ic_media_next, "Next", null)
                 .setStyle(new MediaStyle().setShowActionsInCompactView(1).setMediaSession(mediaSession.getSessionToken()))
-                .setOngoing(true) // ÉP BUỘC thông báo phải hiện diện
+                .setColor(ContextCompat.getColor(this, R.color.primary_600))
+                .setOnlyAlertOnce(true)
+                .setShowWhen(false)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
+                .setOngoing(true)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .build();
     }

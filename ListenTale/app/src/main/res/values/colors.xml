@@ -3,15 +3,21 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- New Vibrant Color Palette (Electric Indigo & Soft Cyan) -->
-    <color name="primary_light">#F0F3FF</color>
-    <color name="primary_200">#C7D2FE</color>
-    <color name="primary_500">#6366F1</color> <!-- Indigo 500 -->
-    <color name="primary_600">#4F46E5</color> <!-- Indigo 600 -->
-    <color name="primary_700">#4338CA</color> <!-- Indigo 700 -->
+    <!-- Bright modern palette: teal core, coral accent, warm highlights -->
+    <color name="primary_light">#D9FBF6</color>
+    <color name="primary_200">#99F6E4</color>
+    <color name="primary_500">#14B8A6</color>
+    <color name="primary_600">#0D9488</color>
+    <color name="primary_700">#0F766E</color>
 
-    <color name="accent_vibrant">#06B6D4</color> <!-- Cyan 500 -->
-    <color name="accent_soft">#ECFEFF</color>
+    <color name="accent_vibrant">#FF6B6B</color>
+    <color name="accent_soft">#FFF1F2</color>
+    <color name="surface_glass">#EFFFFFFF</color>
+    <color name="surface_card">#FFFFFFFF</color>
+    <color name="surface_tint">#F3FFFC</color>
+    <color name="outline_soft">#DDE7E2</color>
+    <color name="sunshine_200">#FEF3C7</color>
+    <color name="sky_200">#BAE6FD</color>
 
     <color name="slate_50">#F8FAFC</color>
     <color name="slate_100">#F1F5F9</color>

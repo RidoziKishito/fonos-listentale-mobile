@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/bg_app_gradient"
     android:fitsSystemWindows="true"
     tools:context=".MainActivity">
 
@@ -21,28 +22,35 @@
 
     <LinearLayout
         android:id="@+id/layout_no_internet"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@color/red_600"
-        android:gravity="center"
+        android:layout_marginHorizontal="18dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_warning_banner"
+        android:elevation="10dp"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="8dp"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp"
         android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:src="@android:drawable/ic_dialog_alert"
-            app:tint="@color/white" />
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_warning_rounded"
+            app:tint="@color/amber_500" />
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="No internet connection. Please check your network."
-            android:textColor="@color/white"
-            android:textSize="12sp"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:text="No internet connection"
+            android:textColor="@color/slate_900"
+            android:textSize="14sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -50,13 +58,20 @@
         android:id="@+id/bottom_navigation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@color/white"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_island_glass"
+        android:elevation="12dp"
         android:visibility="gone"
+        app:itemIconSize="26dp"
+        app:itemTextAppearanceActive="@style/TextAppearance.Fonoss.BottomNav"
+        app:itemTextAppearanceInactive="@style/TextAppearance.Fonoss.BottomNav"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/bottom_nav_menu"
-        app:itemIconTint="@color/violet_600"
-        app:itemTextColor="@color/violet_600" />
+        app:itemActiveIndicatorStyle="@style/Widget.Fonoss.BottomNav.TransparentIndicator"
+        app:itemIconTint="@color/bottom_nav_item_color"
+        app:itemTextColor="@color/bottom_nav_item_color" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
