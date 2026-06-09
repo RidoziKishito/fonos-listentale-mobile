@@ -39,11 +39,8 @@ public class BooksFragment extends Fragment {
         db = FirebaseFirestore.getInstance();
         loadingBar = view.findViewById(R.id.loading_bar);
 
-        view.findViewById(R.id.button_start_selection).setOnClickListener(v ->
+        view.findViewById(R.id.button_download_manager).setOnClickListener(v ->
                 new DownloadBookDialog().show(getChildFragmentManager(), "DownloadBookDialog"));
-        view.findViewById(R.id.button_download_history).setOnClickListener(v -> {
-            new DownloadHistoryDialog().show(getChildFragmentManager(), "DownloadHistory");
-        });
         
         // Setup Trending
         trendingBooks = new ArrayList<>();

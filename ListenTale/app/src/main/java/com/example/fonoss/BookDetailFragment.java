@@ -5,8 +5,6 @@ import android.content.res.ColorStateList;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -66,6 +64,8 @@ public class BookDetailFragment extends Fragment {
             updateDownloadUI();
             checkOfflineAvailability();
         });
+
+        if (currentBook != null) observeDownloadStatus(currentBook.getId());
 
         buttonFavorite.setOnClickListener(v -> { if (currentBook != null) libraryViewModel.toggleFavorite(currentBook); });
 
@@ -138,29 +138,30 @@ public class BookDetailFragment extends Fragment {
     }
 
     private void startDownload() {
-        buttonDownload.setVisibility(View.INVISIBLE);
-        progressDownload.setVisibility(View.VISIBLE);
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            if (currentBook != null) {
-                libraryViewModel.addDownload(currentBook);
-                progressDownload.setVisibility(View.GONE);
-                buttonDownload.setVisibility(View.VISIBLE);
-                UiNotifier.success(getContext(), "Download complete");
-            }
-        }, 2000);
+        if (currentBook != null) {
+            libraryViewModel.enqueueSequentialDownloads(java.util.Collections.singletonList(currentBook));
+            updateDownloadProgressUI(true);
+            UiNotifier.info(getContext(), "Download queued");
+        }
+    }
+
+    private void observeDownloadStatus(String bookId) {
+        libraryViewModel.getDownloadProgress().observe(getViewLifecycleOwner(), progressMap -> {
+            Integer progress = progressMap == null ? null : progressMap.get(bookId);
+            updateDownloadProgressUI(progress != null && progress >= 0);
+        });
+    }
+
+    private void updateDownloadProgressUI(boolean isDownloading) {
+        progressDownload.setVisibility(isDownloading ? View.VISIBLE : View.GONE);
+        buttonDownload.setVisibility(isDownloading ? View.INVISIBLE : View.VISIBLE);
     }
 
     private void startDelete() {
-        buttonDownload.setVisibility(View.INVISIBLE);
-        progressDownload.setVisibility(View.VISIBLE);
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            if (currentBook != null) {
-                libraryViewModel.removeDownload(currentBook.getId());
-                progressDownload.setVisibility(View.GONE);
-                buttonDownload.setVisibility(View.VISIBLE);
-                UiNotifier.info(getContext(), "Deleted from device");
-            }
-        }, 1500);
+        if (currentBook != null) {
+            libraryViewModel.removeDownload(currentBook.getId());
+            UiNotifier.info(getContext(), "Deleted from device");
+        }
     }
 
     private void updateFavoriteUI() {

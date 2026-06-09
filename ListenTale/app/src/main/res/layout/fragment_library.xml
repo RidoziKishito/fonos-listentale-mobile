@@ -68,7 +68,9 @@
             android:text="Select All"
             android:textColor="@color/slate_700"
             android:textStyle="bold"
-            android:buttonTint="@color/primary_600" />
+            android:button="@drawable/sl_checkbox"
+            android:buttonTint="@null"
+            app:buttonTint="@null" />
 
         <View
             android:layout_width="0dp"

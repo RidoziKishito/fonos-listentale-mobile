@@ -19,11 +19,11 @@ public final class UiNotifier {
     private UiNotifier() {}
 
     public static void success(Context context, String message) {
-        show(context, message, R.color.primary_600, R.color.white, R.drawable.ic_check_circle);
+        show(context, message, R.color.green_600, R.color.white, R.drawable.ic_check_white);
     }
 
     public static void warning(Context context, String message) {
-        show(context, message, R.color.sunshine_200, R.color.slate_900, R.drawable.ic_warning_rounded);
+        show(context, message, R.color.amber_500, R.color.white, R.drawable.ic_warning_rounded);
     }
 
     public static void error(Context context, String message) {

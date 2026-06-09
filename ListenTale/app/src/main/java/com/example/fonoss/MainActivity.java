@@ -29,6 +29,9 @@ public class MainActivity extends AppCompatActivity {
 
     private View noInternetLayout;
     private static final int NOTIFICATION_PERMISSION_CODE = 101;
+    private static final String PREFS_NAME = "settings";
+    private static final String KEY_PUSH_NOTIFICATIONS = "push_notifications";
+    private android.content.BroadcastReceiver networkWarningReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         noInternetLayout = findViewById(R.id.layout_no_internet);
+        findViewById(R.id.btn_close_no_internet).setOnClickListener(v -> noInternetLayout.setVisibility(View.GONE));
 
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment);
@@ -70,6 +74,21 @@ public class MainActivity extends AppCompatActivity {
 
         registerNetworkCallback();
         requestNotificationPermission();
+
+        networkWarningReceiver = new android.content.BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String msg = intent.getStringExtra("message");
+                if (msg != null) {
+                    UiNotifier.warning(MainActivity.this, msg);
+                }
+            }
+        };
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(networkWarningReceiver, new android.content.IntentFilter("com.example.fonoss.NETWORK_WARNING"), Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(networkWarningReceiver, new android.content.IntentFilter("com.example.fonoss.NETWORK_WARNING"));
+        }
     }
 
     @Override
@@ -93,6 +112,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void requestNotificationPermission() {
+        boolean notificationsEnabled = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .getBoolean(KEY_PUSH_NOTIFICATIONS, true);
+        if (!notificationsEnabled) return;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_CODE);
@@ -152,5 +174,12 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         return super.dispatchTouchEvent(event);
+    }
+    @Override
+    protected void onDestroy() {
+        if (networkWarningReceiver != null) {
+            unregisterReceiver(networkWarningReceiver);
+        }
+        super.onDestroy();
     }
 }

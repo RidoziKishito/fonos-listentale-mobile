@@ -9,7 +9,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -27,17 +29,21 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 public class DownloadBookDialog extends BottomSheetDialogFragment {
 
-    private final List<Book> allBooks = new ArrayList<>();
+    private final Map<String, Book> allBooksMap = new HashMap<>();
+    private final Map<String, Book> globalCatalogBooksMap = new HashMap<>();
     private final List<Book> filteredBooks = new ArrayList<>();
     private final Set<String> selectedBookIds = new HashSet<>();
     private final Set<String> downloadedBookIds = new HashSet<>();
+    private final Map<String, Integer> downloadingProgressMap = new HashMap<>();
 
     private DownloadBookAdapter adapter;
     private Button downloadButton;
@@ -66,8 +72,8 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
 
         RecyclerView recyclerView = view.findViewById(R.id.recycler_download_books);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
-        adapter = new DownloadBookAdapter(filteredBooks, selectedBookIds, downloadedBookIds,
-                this::onSelectionChanged);
+        adapter = new DownloadBookAdapter(filteredBooks, selectedBookIds, downloadedBookIds, downloadingProgressMap,
+                this::onSelectionChanged, this::cancelDownload);
         recyclerView.setAdapter(adapter);
 
         view.findViewById(R.id.button_close_download_dialog).setOnClickListener(v -> dismiss());
@@ -82,59 +88,110 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
             @Override public void afterTextChanged(Editable s) {}
         });
 
+        libraryViewModel.getSavedBooks().observe(getViewLifecycleOwner(), this::updateBooksSource);
+        libraryViewModel.getInProgressBooks().observe(getViewLifecycleOwner(), this::updateBooksSource);
+        libraryViewModel.getCompletedBooks().observe(getViewLifecycleOwner(), this::updateBooksSource);
+
         libraryViewModel.getDownloadedBooks().observe(getViewLifecycleOwner(), books -> {
+            updateBooksSource(books);
             downloadedBookIds.clear();
             if (books != null) {
                 for (Book book : books) {
                     if (book != null && book.getId() != null) downloadedBookIds.add(book.getId());
                 }
             }
+            downloadingProgressMap.keySet().removeAll(downloadedBookIds);
             selectedBookIds.removeAll(downloadedBookIds);
-            adapter.notifyDataSetChanged();
-            updateSelectionControls();
+            filterBooks(getCurrentQuery());
         });
 
+        libraryViewModel.getDownloadProgress().observe(getViewLifecycleOwner(), this::updateDownloadProgress);
+
+        loadingBar.setVisibility(View.GONE);
         fetchAllBooks();
     }
 
-    private void fetchAllBooks() {
-        loadingBar.setVisibility(View.VISIBLE);
-        emptyText.setVisibility(View.GONE);
+    private void updateDownloadProgress(Map<String, Integer> newProgressMap) {
+        downloadingProgressMap.clear();
+        if (newProgressMap != null) {
+            for (Map.Entry<String, Integer> entry : newProgressMap.entrySet()) {
+                if (!downloadedBookIds.contains(entry.getKey())) {
+                    downloadingProgressMap.put(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+        filterBooks(getCurrentQuery());
+    }
 
+    private void fetchAllBooks() {
         FirebaseFirestore.getInstance().collection("books").get().addOnCompleteListener(task -> {
             if (!isAdded()) return;
-            loadingBar.setVisibility(View.GONE);
-
-            if (!task.isSuccessful() || task.getResult() == null) {
+            if (task.isSuccessful() && task.getResult() != null) {
+                for (QueryDocumentSnapshot document : task.getResult()) {
+                    Book book = document.toObject(Book.class);
+                    if (book != null) {
+                        book.setId(document.getId());
+                        globalCatalogBooksMap.put(book.getId(), book);
+                    }
+                }
+                filterBooks(getCurrentQuery());
+            } else {
                 emptyText.setText("Unable to load books");
                 emptyText.setVisibility(View.VISIBLE);
-                Toast.makeText(requireContext(), "Error fetching books", Toast.LENGTH_SHORT).show();
-                return;
             }
-
-            allBooks.clear();
-            for (QueryDocumentSnapshot document : task.getResult()) {
-                Book book = document.toObject(Book.class);
-                if (book == null) continue;
-                book.setId(document.getId());
-                allBooks.add(book);
-            }
-            filterBooks("");
         });
+    }
+
+    private void updateBooksSource(List<Book> books) {
+        if (books == null) return;
+        boolean changed = false;
+        for (Book book : books) {
+            if (book != null && book.getId() != null && !allBooksMap.containsKey(book.getId())) {
+                allBooksMap.put(book.getId(), book);
+                changed = true;
+            }
+        }
+        if (changed) filterBooks(getCurrentQuery());
+    }
+
+    private void cancelDownload(String bookId) {
+        libraryViewModel.cancelDownload(bookId);
+        downloadingProgressMap.remove(bookId);
+        Toast.makeText(requireContext(), "Download cancelled", Toast.LENGTH_SHORT).show();
+        filterBooks(getCurrentQuery());
     }
 
     private void filterBooks(String query) {
         String normalizedQuery = query.trim().toLowerCase(Locale.ROOT);
         filteredBooks.clear();
 
-        for (Book book : allBooks) {
+        List<Book> downloadingList = new ArrayList<>();
+        List<Book> historyList = new ArrayList<>();
+        List<Book> availableList = new ArrayList<>();
+
+        Iterable<Book> sourceBooks = globalCatalogBooksMap.isEmpty()
+                ? allBooksMap.values()
+                : globalCatalogBooksMap.values();
+
+        for (Book book : sourceBooks) {
+            if (book == null || book.getId() == null) continue;
             if (normalizedQuery.isEmpty()
                     || containsIgnoreCase(book.getTitle(), normalizedQuery)
                     || containsIgnoreCase(book.getAuthor(), normalizedQuery)
                     || containsIgnoreCase(book.getGenre(), normalizedQuery)) {
-                filteredBooks.add(book);
+                if (isTrackedDownload(book.getId())) {
+                    downloadingList.add(book);
+                } else if (downloadedBookIds.contains(book.getId())) {
+                    historyList.add(book);
+                } else {
+                    availableList.add(book);
+                }
             }
         }
+
+        filteredBooks.addAll(downloadingList);
+        filteredBooks.addAll(historyList);
+        filteredBooks.addAll(availableList);
 
         adapter.notifyDataSetChanged();
         emptyText.setText("No books found");
@@ -149,7 +206,7 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
 
     private void selectAllVisible(boolean selected) {
         for (Book book : filteredBooks) {
-            if (book.getId() == null || downloadedBookIds.contains(book.getId())) continue;
+            if (book.getId() == null || downloadedBookIds.contains(book.getId()) || isActiveDownload(book.getId())) continue;
             if (selected) selectedBookIds.add(book.getId());
             else selectedBookIds.remove(book.getId());
         }
@@ -165,7 +222,7 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
         int selectableVisibleCount = 0;
         int selectedVisibleCount = 0;
         for (Book book : filteredBooks) {
-            if (book.getId() == null || downloadedBookIds.contains(book.getId())) continue;
+            if (book.getId() == null || downloadedBookIds.contains(book.getId()) || isActiveDownload(book.getId())) continue;
             selectableVisibleCount++;
             if (selectedBookIds.contains(book.getId())) selectedVisibleCount++;
         }
@@ -181,10 +238,9 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
 
     private void downloadSelectedBooks() {
         List<Book> booksToDownload = new ArrayList<>();
-        for (Book book : allBooks) {
-            if (book.getId() != null
-                    && selectedBookIds.contains(book.getId())
-                    && !downloadedBookIds.contains(book.getId())) {
+        for (String id : selectedBookIds) {
+            Book book = globalCatalogBooksMap.containsKey(id) ? globalCatalogBooksMap.get(id) : allBooksMap.get(id);
+            if (book != null && !downloadedBookIds.contains(id) && !isActiveDownload(id)) {
                 booksToDownload.add(book);
             }
         }
@@ -194,9 +250,28 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
             return;
         }
 
+        for (Book book : booksToDownload) {
+            downloadingProgressMap.put(book.getId(), 0);
+        }
         libraryViewModel.enqueueSequentialDownloads(booksToDownload);
         Toast.makeText(requireContext(), "Downloads added to queue", Toast.LENGTH_SHORT).show();
-        dismiss();
+        selectedBookIds.clear();
+        filterBooks(getCurrentQuery());
+    }
+
+    private String getCurrentQuery() {
+        if (getView() == null) return "";
+        TextInputEditText searchInput = getView().findViewById(R.id.input_search_download_books);
+        return searchInput != null && searchInput.getText() != null ? searchInput.getText().toString() : "";
+    }
+
+    private boolean isTrackedDownload(String bookId) {
+        return downloadingProgressMap.containsKey(bookId);
+    }
+
+    private boolean isActiveDownload(String bookId) {
+        Integer progress = downloadingProgressMap.get(bookId);
+        return progress != null && progress >= 0;
     }
 
     private static class DownloadBookAdapter
@@ -205,14 +280,23 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
         private final List<Book> books;
         private final Set<String> selectedBookIds;
         private final Set<String> downloadedBookIds;
+        private final Map<String, Integer> downloadingProgressMap;
         private final Runnable selectionChanged;
+        private final OnCancelListener cancelListener;
+
+        interface OnCancelListener {
+            void onCancel(String bookId);
+        }
 
         DownloadBookAdapter(List<Book> books, Set<String> selectedBookIds,
-                            Set<String> downloadedBookIds, Runnable selectionChanged) {
+                            Set<String> downloadedBookIds, Map<String, Integer> downloadingProgressMap,
+                            Runnable selectionChanged, OnCancelListener cancelListener) {
             this.books = books;
             this.selectedBookIds = selectedBookIds;
             this.downloadedBookIds = downloadedBookIds;
+            this.downloadingProgressMap = downloadingProgressMap;
             this.selectionChanged = selectionChanged;
+            this.cancelListener = cancelListener;
         }
 
         @NonNull
@@ -226,26 +310,43 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             Book book = books.get(position);
+            Integer trackedProgress = downloadingProgressMap.get(book.getId());
             boolean downloaded = downloadedBookIds.contains(book.getId());
+            boolean failed = trackedProgress != null && trackedProgress < 0;
+            boolean downloading = trackedProgress != null && trackedProgress >= 0;
+            int progress = trackedProgress == null ? 0 : trackedProgress;
 
             holder.title.setText(book.getTitle());
             holder.author.setText(book.getAuthor());
             holder.meta.setText(buildMeta(book));
-            holder.status.setVisibility(downloaded ? View.VISIBLE : View.GONE);
-            holder.checkBox.setEnabled(!downloaded);
-            holder.itemView.setAlpha(downloaded ? 0.55f : 1f);
+
+            holder.status.setVisibility(downloaded || failed ? View.VISIBLE : View.GONE);
+            holder.status.setText(downloaded ? "Downloaded" : "Failed");
+            holder.checkBox.setVisibility((downloaded || downloading) ? View.GONE : View.VISIBLE);
+            holder.layoutDownloading.setVisibility(downloading ? View.VISIBLE : View.GONE);
+
+            if (downloading) {
+                holder.progressBar.setProgress(progress);
+                holder.textProgress.setText(progress + "%");
+                holder.buttonCancel.setOnClickListener(v -> cancelListener.onCancel(book.getId()));
+            } else {
+                holder.buttonCancel.setOnClickListener(null);
+            }
+
+            holder.checkBox.setEnabled(!downloaded && !downloading);
+            holder.itemView.setAlpha((downloaded || downloading) ? 0.7f : 1f);
 
             holder.checkBox.setOnCheckedChangeListener(null);
-            holder.checkBox.setChecked(!downloaded && selectedBookIds.contains(book.getId()));
+            holder.checkBox.setChecked(!downloaded && !downloading && selectedBookIds.contains(book.getId()));
             holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (downloaded || book.getId() == null) return;
+                if (downloaded || downloading || book.getId() == null) return;
                 if (isChecked) selectedBookIds.add(book.getId());
                 else selectedBookIds.remove(book.getId());
                 selectionChanged.run();
             });
 
             holder.itemView.setOnClickListener(v -> {
-                if (!downloaded) holder.checkBox.setChecked(!holder.checkBox.isChecked());
+                if (!downloaded && !downloading) holder.checkBox.setChecked(!holder.checkBox.isChecked());
             });
 
             Glide.with(holder.itemView.getContext())
@@ -275,6 +376,10 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
             final TextView meta;
             final TextView status;
             final CheckBox checkBox;
+            final LinearLayout layoutDownloading;
+            final ProgressBar progressBar;
+            final TextView textProgress;
+            final ImageButton buttonCancel;
 
             ViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -284,6 +389,10 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
                 meta = itemView.findViewById(R.id.text_download_book_meta);
                 status = itemView.findViewById(R.id.text_downloaded_status);
                 checkBox = itemView.findViewById(R.id.checkbox_download_book);
+                layoutDownloading = itemView.findViewById(R.id.layout_downloading_state);
+                progressBar = itemView.findViewById(R.id.progress_downloading);
+                textProgress = itemView.findViewById(R.id.text_downloading_progress);
+                buttonCancel = itemView.findViewById(R.id.button_cancel_download);
             }
         }
     }

@@ -40,16 +40,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/text_title">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_marginBottom="10dp"
-            android:fontFamily="sans-serif-bold"
-            android:text="Notifications"
-            android:textColor="@color/slate_900"
-            android:textSize="20sp" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -59,6 +49,7 @@
             android:paddingVertical="12dp">
 
             <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switch_push_notifications"
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:checked="true"
@@ -72,40 +63,12 @@
                 android:layout_height="1dp"
                 android:background="@color/outline_soft" />
 
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:layout_width="match_parent"
-                android:layout_height="54dp"
-                android:checked="false"
-                android:text="Email Updates"
-                android:textColor="@color/slate_800"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_marginTop="28dp"
-            android:layout_marginBottom="10dp"
-            android:fontFamily="sans-serif-bold"
-            android:text="App Settings"
-            android:textColor="@color/slate_900"
-            android:textSize="20sp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_island_glass"
-            android:orientation="vertical"
-            android:paddingHorizontal="18dp"
-            android:paddingVertical="8dp">
-
             <TextView
+                android:id="@+id/button_clear_data"
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:gravity="center_vertical"
-                android:text="Download Quality"
+                android:text="Clear Data"
                 android:textColor="@color/slate_800"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -116,20 +79,7 @@
                 android:background="@color/outline_soft" />
 
             <TextView
-                android:layout_width="match_parent"
-                android:layout_height="54dp"
-                android:gravity="center_vertical"
-                android:text="Clear Cache"
-                android:textColor="@color/slate_800"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/outline_soft" />
-
-            <TextView
+                android:id="@+id/button_about_app"
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:gravity="center_vertical"
