@@ -1,21 +1,23 @@
 package com.example.fonoss;
 
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.google.android.material.tabs.TabLayout;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,7 +30,8 @@ public class LibraryFragment extends Fragment {
     private LibraryViewModel libraryViewModel;
     private BookAdapter adapter;
     private List<Book> currentList = new ArrayList<>();
-    private TabLayout tabLayout;
+    private int currentTabPosition = 0;
+    private final TextView[] tabButtons = new TextView[4];
     private final Map<Integer, Set<String>> selectionsByTab = new HashMap<>();
     private boolean isSelectionMode = false;
     private TextView buttonToggleSelect;
@@ -78,23 +81,22 @@ public class LibraryFragment extends Fragment {
         checkboxSelectAll.setOnClickListener(v -> toggleSelectAll());
         buttonDelete.setOnClickListener(v -> showDeleteConfirmation());
 
-        tabLayout = view.findViewById(R.id.tab_layout_library);
-        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
-            @Override
-            public void onTabSelected(TabLayout.Tab tab) {
-                updateListForTab(tab.getPosition());
-            }
-            @Override public void onTabUnselected(TabLayout.Tab tab) {}
-            @Override public void onTabReselected(TabLayout.Tab tab) {}
-        });
+        tabButtons[0] = view.findViewById(R.id.tab_saved);
+        tabButtons[1] = view.findViewById(R.id.tab_in_progress);
+        tabButtons[2] = view.findViewById(R.id.tab_downloaded);
+        tabButtons[3] = view.findViewById(R.id.tab_completed);
+        for (int i = 0; i < tabButtons.length; i++) {
+            final int position = i;
+            tabButtons[i].setOnClickListener(v -> selectTab(position));
+        }
 
         // Observe all lists for real-time updates from Firebase
-        libraryViewModel.getSavedBooks().observe(getViewLifecycleOwner(), books -> { if (tabLayout.getSelectedTabPosition() == 0) adapter.updateList(books); });
-        libraryViewModel.getInProgressBooks().observe(getViewLifecycleOwner(), books -> { if (tabLayout.getSelectedTabPosition() == 1) adapter.updateList(books); });
-        libraryViewModel.getDownloadedBooks().observe(getViewLifecycleOwner(), books -> { if (tabLayout.getSelectedTabPosition() == 2) adapter.updateList(books); });
-        libraryViewModel.getCompletedBooks().observe(getViewLifecycleOwner(), books -> { if (tabLayout.getSelectedTabPosition() == 3) adapter.updateList(books); });
+        libraryViewModel.getSavedBooks().observe(getViewLifecycleOwner(), books -> { if (currentTabPosition == 0) updateListForTab(0); });
+        libraryViewModel.getInProgressBooks().observe(getViewLifecycleOwner(), books -> { if (currentTabPosition == 1) updateListForTab(1); });
+        libraryViewModel.getDownloadedBooks().observe(getViewLifecycleOwner(), books -> { if (currentTabPosition == 2) updateListForTab(2); });
+        libraryViewModel.getCompletedBooks().observe(getViewLifecycleOwner(), books -> { if (currentTabPosition == 3) updateListForTab(3); });
 
-        updateListForTab(0);
+        selectTab(0);
     }
 
     private void toggleSelectionMode() {
@@ -112,7 +114,7 @@ public class LibraryFragment extends Fragment {
 
     private void toggleSelectAll() {
         boolean checked = checkboxSelectAll.isChecked();
-        Set<String> currentSelectedIds = selectionsByTab.get(tabLayout.getSelectedTabPosition());
+        Set<String> currentSelectedIds = selectionsByTab.get(currentTabPosition);
         if (currentSelectedIds == null) return;
         
         for (Book book : currentList) {
@@ -127,7 +129,7 @@ public class LibraryFragment extends Fragment {
             checkboxSelectAll.setChecked(false);
             return;
         }
-        Set<String> currentSelectedIds = selectionsByTab.get(tabLayout.getSelectedTabPosition());
+        Set<String> currentSelectedIds = selectionsByTab.get(currentTabPosition);
         if (currentSelectedIds == null) return;
 
         boolean allSelected = true;
@@ -145,15 +147,35 @@ public class LibraryFragment extends Fragment {
         for (Set<String> set : selectionsByTab.values()) totalToDelete += set.size();
 
         if (totalToDelete == 0) {
-            Toast.makeText(getContext(), "Please select books to delete", Toast.LENGTH_SHORT).show();
+            UiNotifier.warning(getContext(), "Select books to remove first");
             return;
         }
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Delete Books")
-                .setMessage("Are you sure you want to remove " + totalToDelete + " items from selected categories? Only downloaded content from 'Downloaded' tab will be removed from device.")
-                .setPositiveButton("Yes", (dialog, which) -> deleteSelectedBooks())
-                .setNegativeButton("No", null)
-                .show();
+
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_confirm_delete, null);
+        TextView message = dialogView.findViewById(R.id.text_delete_message);
+        message.setText("Remove " + totalToDelete + " selected item(s) from your library categories. Downloaded files are only deleted from this device when they are selected in Downloads.");
+
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .setPositiveButton("Remove", (d, which) -> deleteSelectedBooks())
+                .setNegativeButton("Cancel", null)
+                .create();
+        dialog.setOnShowListener(d -> {
+            if (dialog.getWindow() != null) {
+                dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            }
+            Button positive = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            Button negative = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+            if (positive != null) {
+                positive.setTextColor(ContextCompat.getColor(requireContext(), R.color.red_600));
+                positive.setTextSize(14);
+            }
+            if (negative != null) {
+                negative.setTextColor(ContextCompat.getColor(requireContext(), R.color.slate_500));
+                negative.setTextSize(14);
+            }
+        });
+        dialog.show();
     }
 
     private void deleteSelectedBooks() {
@@ -164,7 +186,7 @@ public class LibraryFragment extends Fragment {
 
         libraryViewModel.deleteSpecificBooks(exportData);
         toggleSelectionMode(); // Exit selection mode
-        Toast.makeText(getContext(), "Deletion request sent", Toast.LENGTH_SHORT).show();
+        UiNotifier.success(getContext(), "Library updated");
     }
 
     private void updateListForTab(int position) {
@@ -182,5 +204,13 @@ public class LibraryFragment extends Fragment {
         adapter.updateList(currentList);
 
         if (isSelectionMode) updateSelectAllState();
+    }
+
+    private void selectTab(int position) {
+        currentTabPosition = position;
+        for (int i = 0; i < tabButtons.length; i++) {
+            tabButtons[i].setSelected(i == position);
+        }
+        updateListForTab(position);
     }
 }

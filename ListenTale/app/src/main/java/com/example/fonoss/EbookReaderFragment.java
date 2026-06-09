@@ -15,7 +15,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.widget.NestedScrollView;
@@ -235,7 +234,7 @@ public class EbookReaderFragment extends Fragment {
         );
 
         libraryViewModel.saveBookmark(bookmark);
-        Toast.makeText(getContext(), "Bookmark added!", Toast.LENGTH_SHORT).show();
+        UiNotifier.success(getContext(), "Bookmark added");
         applyHighlightsKeepingScroll(scrollY);
     }
 
@@ -265,7 +264,7 @@ public class EbookReaderFragment extends Fragment {
                 int tempY = readerScrollView.getScrollY();
                 libraryViewModel.deleteBookmark(bookmark.getId());
                 applyHighlightsKeepingScroll(tempY);
-                Toast.makeText(getContext(), "Bookmark deleted", Toast.LENGTH_SHORT).show();
+                UiNotifier.info(getContext(), "Bookmark removed");
             }
         });
 

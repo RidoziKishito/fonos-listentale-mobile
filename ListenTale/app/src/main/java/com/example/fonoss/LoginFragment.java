@@ -34,7 +34,6 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import android.widget.Toast;
 
 public class LoginFragment extends Fragment {
 
@@ -118,7 +117,7 @@ public class LoginFragment extends Fragment {
             @Override
             public void onError(@NonNull androidx.credentials.exceptions.GetCredentialException e) {
                 requireActivity().runOnUiThread(() -> 
-                    Toast.makeText(getContext(), "Google Sign In failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                    UiNotifier.error(getContext(), "Google sign in failed"));
             }
         });
     }
@@ -137,7 +136,7 @@ public class LoginFragment extends Fragment {
                                 userViewModel.fetchUserData();
                                 Navigation.findNavController(requireView()).navigate(R.id.action_loginFragment_to_booksFragment);
                             } else {
-                                Toast.makeText(getContext(), "Auth failed", Toast.LENGTH_SHORT).show();
+                                UiNotifier.error(getContext(), "Authentication failed");
                             }
                         });
             } catch (Exception e) {

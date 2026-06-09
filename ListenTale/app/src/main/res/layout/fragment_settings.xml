@@ -3,14 +3,15 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
-    android:padding="24dp">
+    android:background="@drawable/bg_app_gradient"
+    android:paddingHorizontal="22dp"
+    android:paddingTop="18dp">
 
     <ImageButton
         android:id="@+id/button_back"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
+        android:layout_width="46dp"
+        android:layout_height="46dp"
+        android:background="@drawable/bg_circle_white_alpha"
         android:contentDescription="Back"
         android:src="@android:drawable/ic_menu_revert"
         app:layout_constraintStart_toStartOf="parent"
@@ -21,81 +22,122 @@
         android:id="@+id/text_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
+        android:layout_marginStart="14dp"
         android:fontFamily="sans-serif-black"
         android:text="Settings"
         android:textColor="@color/slate_900"
-        android:textSize="24sp"
+        android:textSize="27sp"
         app:layout_constraintBottom_toBottomOf="@id/button_back"
         app:layout_constraintStart_toEndOf="@id/button_back"
         app:layout_constraintTop_toTopOf="@id/button_back" />
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="26dp"
         android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/text_title">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginBottom="10dp"
             android:fontFamily="sans-serif-bold"
             android:text="Notifications"
             android:textColor="@color/slate_900"
-            android:textSize="18sp" />
+            android:textSize="20sp" />
 
-        <com.google.android.material.switchmaterial.SwitchMaterial
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:checked="true"
-            android:text="Push Notifications"
-            android:textColor="@color/slate_700"
-            android:textSize="16sp" />
+            android:background="@drawable/bg_island_glass"
+            android:orientation="vertical"
+            android:paddingHorizontal="18dp"
+            android:paddingVertical="12dp">
 
-        <com.google.android.material.switchmaterial.SwitchMaterial
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:checked="false"
-            android:text="Email Updates"
-            android:textColor="@color/slate_700"
-            android:textSize="16sp" />
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:checked="true"
+                android:text="Push Notifications"
+                android:textColor="@color/slate_800"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/outline_soft" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:checked="false"
+                android:text="Email Updates"
+                android:textColor="@color/slate_800"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="28dp"
+            android:layout_marginBottom="10dp"
             android:fontFamily="sans-serif-bold"
             android:text="App Settings"
             android:textColor="@color/slate_900"
-            android:textSize="18sp" />
+            android:textSize="20sp" />
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:gravity="center_vertical"
-            android:text="Download Quality"
-            android:textColor="@color/slate_700"
-            android:textSize="16sp" />
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_island_glass"
+            android:orientation="vertical"
+            android:paddingHorizontal="18dp"
+            android:paddingVertical="8dp">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:gravity="center_vertical"
-            android:text="Clear Cache"
-            android:textColor="@color/slate_700"
-            android:textSize="16sp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:gravity="center_vertical"
+                android:text="Download Quality"
+                android:textColor="@color/slate_800"
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:gravity="center_vertical"
-            android:text="About ListenTale"
-            android:textColor="@color/slate_700"
-            android:textSize="16sp" />
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/outline_soft" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:gravity="center_vertical"
+                android:text="Clear Cache"
+                android:textColor="@color/slate_800"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/outline_soft" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:gravity="center_vertical"
+                android:text="About ListenTale"
+                android:textColor="@color/slate_800"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
