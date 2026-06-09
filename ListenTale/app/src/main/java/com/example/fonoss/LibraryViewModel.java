@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.google.firebase.firestore.DocumentReference;
 
 public class LibraryViewModel extends ViewModel {
     private final MutableLiveData<List<Book>> savedBooks = new MutableLiveData<>(new ArrayList<>());
@@ -20,6 +21,7 @@ public class LibraryViewModel extends ViewModel {
     private final MutableLiveData<List<Book>> completedBooks = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<Map<String, Long>> bookProgressPos = new MutableLiveData<>(new HashMap<>());
     private final MutableLiveData<Map<String, Long>> bookProgressChapter = new MutableLiveData<>(new HashMap<>());
+    private final MutableLiveData<List<Bookmark>> bookmarks = new MutableLiveData<>(new ArrayList<>());
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private final FirebaseAuth mAuth = FirebaseAuth.getInstance();
@@ -30,6 +32,7 @@ public class LibraryViewModel extends ViewModel {
     public LiveData<List<Book>> getCompletedBooks() { return completedBooks; }
     public LiveData<Map<String, Long>> getBookProgressPos() { return bookProgressPos; }
     public LiveData<Map<String, Long>> getBookProgressChapter() { return bookProgressChapter; }
+    public LiveData<List<Bookmark>> getBookmarks() { return bookmarks; }
 
     public void fetchLibraryData() {
         FirebaseUser user = mAuth.getCurrentUser();
@@ -130,6 +133,80 @@ public class LibraryViewModel extends ViewModel {
         Map<String, Object> update = new HashMap<>();
         update.put("progressChapters." + bookId, (long)chapter);
         db.collection("users").document(user.getUid()).set(update, SetOptions.merge());
+    }
+
+    public void fetchBookmarks(String bookId) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) return;
+        bookmarks.setValue(new ArrayList<>());
+
+        db.collection("users").document(user.getUid())
+                .collection("bookmarks")
+                .whereEqualTo("bookId", bookId)
+                .addSnapshotListener((snapshot, e) -> {
+                    if (snapshot != null) {
+                        List<Bookmark> list = new ArrayList<>();
+                        for (com.google.firebase.firestore.DocumentSnapshot doc : snapshot.getDocuments()) {
+                            Bookmark bookmark = doc.toObject(Bookmark.class);
+                            if (bookmark != null) {
+                                bookmark.setId(doc.getId());
+                                list.add(bookmark);
+                            }
+                        }
+                        bookmarks.setValue(list);
+                    }
+                });
+    }
+
+    public void saveBookmark(Bookmark bookmark) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) return;
+
+        DocumentReference ref = db.collection("users").document(user.getUid())
+                .collection("bookmarks")
+                .document();
+        bookmark.setId(ref.getId());
+        upsertLocalBookmark(bookmark);
+        ref.set(bookmark);
+    }
+
+    public void deleteBookmark(String bookmarkId) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) return;
+        removeLocalBookmark(bookmarkId);
+
+        db.collection("users").document(user.getUid())
+                .collection("bookmarks")
+                .document(bookmarkId)
+                .delete();
+    }
+
+    private void upsertLocalBookmark(Bookmark bookmark) {
+        List<Bookmark> current = bookmarks.getValue();
+        List<Bookmark> updated = current == null ? new ArrayList<>() : new ArrayList<>(current);
+        for (int i = 0; i < updated.size(); i++) {
+            if (bookmark.getId() != null && bookmark.getId().equals(updated.get(i).getId())) {
+                updated.set(i, bookmark);
+                bookmarks.setValue(updated);
+                return;
+            }
+        }
+        updated.add(bookmark);
+        bookmarks.setValue(updated);
+    }
+
+    private void removeLocalBookmark(String bookmarkId) {
+        if (bookmarkId == null) return;
+        List<Bookmark> current = bookmarks.getValue();
+        if (current == null) return;
+
+        List<Bookmark> updated = new ArrayList<>();
+        for (Bookmark bookmark : current) {
+            if (!bookmarkId.equals(bookmark.getId())) {
+                updated.add(bookmark);
+            }
+        }
+        bookmarks.setValue(updated);
     }
 
     public void markAsInProgress(Book book) {

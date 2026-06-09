@@ -34,6 +34,14 @@
             android:textSize="18sp"
             android:maxLines="1"
             android:ellipsize="end"/>
+
+        <ImageButton
+            android:id="@+id/button_bookmarks"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_sort_by_size"
+            app:tint="@color/slate_900" />
     </LinearLayout>
 
     <androidx.core.widget.NestedScrollView
