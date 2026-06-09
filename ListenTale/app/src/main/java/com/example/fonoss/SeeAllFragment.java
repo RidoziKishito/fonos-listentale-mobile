@@ -9,7 +9,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -38,13 +37,30 @@ public class SeeAllFragment extends Fragment {
         
         allBooks = new ArrayList<>();
         RecyclerView recyclerView = view.findViewById(R.id.recycler_see_all);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(getContext(), 2));
         
-        adapter = new BookAdapter(allBooks, book -> {
-            Bundle bundle = new Bundle();
-            bundle.putSerializable("book", book);
-            Navigation.findNavController(view).navigate(R.id.action_seeAllFragment_to_bookDetailFragment, bundle);
-        }, true); // Use horizontal layout
+        adapter = new BookAdapter(allBooks, new BookAdapter.OnBookClickListener() {
+            @Override
+            public void onBookClick(Book book) {
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("book", book);
+                Navigation.findNavController(view).navigate(R.id.action_seeAllFragment_to_bookDetailFragment, bundle);
+            }
+
+            @Override
+            public void onPlayClick(Book book) {
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("book", book);
+                Navigation.findNavController(view).navigate(R.id.action_seeAllFragment_to_audioPlayerFragment, bundle);
+            }
+
+            @Override
+            public void onReadClick(Book book) {
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("book", book);
+                Navigation.findNavController(view).navigate(R.id.action_seeAllFragment_to_ebookReaderFragment, bundle);
+            }
+        }, false); // Use card layout
         recyclerView.setAdapter(adapter);
 
         view.findViewById(R.id.button_see_all_back).setOnClickListener(v -> Navigation.findNavController(v).navigateUp());

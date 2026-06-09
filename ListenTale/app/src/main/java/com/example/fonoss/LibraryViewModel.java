@@ -3,6 +3,11 @@ package com.example.fonoss;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
+import androidx.work.Data;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FieldValue;
@@ -114,6 +119,27 @@ public class LibraryViewModel extends ViewModel {
 
     public void toggleFavorite(Book book) { updateLibraryItem("saved", book, !isFavorite(book.getId())); }
     public void addDownload(Book book) { updateLibraryItem("downloaded", book, true); }
+
+    public void enqueueSequentialDownloads(List<Book> books) {
+        if (books == null || books.isEmpty() || mAuth.getCurrentUser() == null) return;
+        
+        WorkManager workManager = WorkManager.getInstance(mAuth.getApp().getApplicationContext());
+        String userId = mAuth.getCurrentUser().getUid();
+
+        for (Book book : books) {
+            OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(DownloadWorker.class)
+                    .setInputData(new Data.Builder()
+                            .putString("BOOK_ID", book.getId())
+                            .putString("BOOK_TITLE", book.getTitle())
+                            .putString("USER_ID", userId)
+                            .build())
+                    .addTag("DOWNLOAD_QUEUE")
+                    .build();
+            
+            workManager.beginUniqueWork("SEQUENTIAL_DOWNLOADS", ExistingWorkPolicy.APPEND, request).enqueue();
+        }
+    }
+
     public void removeDownload(String bookId) {
         Book book = findInList(downloadedBooks.getValue(), bookId);
         if (book != null) updateLibraryItem("downloaded", book, false);

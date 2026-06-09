@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -20,9 +21,12 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
     private boolean isHorizontal;
     private boolean isSelectionMode = false;
     private Set<String> selectedBookIds = new HashSet<>();
+    private Set<String> downloadedBookIds = new HashSet<>();
 
     public interface OnBookClickListener {
         void onBookClick(Book book);
+        default void onPlayClick(Book book) {}
+        default void onReadClick(Book book) {}
         default void onSelectionChanged(int count) {}
     }
 
@@ -50,6 +54,8 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
         holder.title.setText(book.getTitle());
         holder.author.setText(book.getAuthor());
         if (holder.category != null) holder.category.setText(book.getGenre());
+        if (holder.duration != null) holder.duration.setText(book.getDuration());
+        if (holder.pages != null) holder.pages.setText(book.getPages());
         
         Glide.with(holder.itemView.getContext())
                 .load(book.getCoverUrl())
@@ -57,21 +63,38 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
                 .error(android.R.drawable.ic_menu_report_image)
                 .into(holder.cover);
 
-        if (holder.checkBox != null) {
-            holder.checkBox.setVisibility(isSelectionMode ? View.VISIBLE : View.GONE);
-            holder.checkBox.setOnCheckedChangeListener(null);
-            holder.checkBox.setChecked(selectedBookIds.contains(book.getId()));
-            holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isChecked) selectedBookIds.add(book.getId());
-                else selectedBookIds.remove(book.getId());
-                listener.onSelectionChanged(selectedBookIds.size());
-            });
+        boolean isDownloaded = downloadedBookIds.contains(book.getId());
+        if (isSelectionMode) {
+            holder.itemView.setEnabled(!isDownloaded);
+            holder.itemView.setAlpha(isDownloaded ? 0.5f : 1.0f);
+            if (holder.checkBox != null) {
+                holder.checkBox.setEnabled(!isDownloaded);
+                holder.checkBox.setVisibility(View.VISIBLE);
+                holder.checkBox.setOnCheckedChangeListener(null);
+                holder.checkBox.setChecked(selectedBookIds.contains(book.getId()) && !isDownloaded);
+                holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    if (isChecked) selectedBookIds.add(book.getId());
+                    else selectedBookIds.remove(book.getId());
+                    listener.onSelectionChanged(selectedBookIds.size());
+                });
+            }
+        } else {
+            holder.itemView.setEnabled(true);
+            holder.itemView.setAlpha(1.0f);
+            if (holder.checkBox != null) holder.checkBox.setVisibility(View.GONE);
+        }
+
+        if (holder.buttonPlay != null) {
+            holder.buttonPlay.setOnClickListener(v -> listener.onPlayClick(book));
+        }
+        if (holder.buttonRead != null) {
+            holder.buttonRead.setOnClickListener(v -> listener.onReadClick(book));
         }
 
         holder.itemView.setOnClickListener(v -> {
-            if (isSelectionMode && holder.checkBox != null) {
+            if (isSelectionMode && holder.checkBox != null && !isDownloaded) {
                 holder.checkBox.setChecked(!holder.checkBox.isChecked());
-            } else {
+            } else if (!isSelectionMode) {
                 listener.onBookClick(book);
             }
         });
@@ -92,6 +115,11 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
         notifyDataSetChanged();
     }
 
+    public void setDownloadedBookIds(Set<String> ids) {
+        this.downloadedBookIds = ids;
+        notifyDataSetChanged();
+    }
+
     @Override
     public int getItemCount() { return books.size(); }
 
@@ -101,9 +129,10 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
     }
 
     static class BookViewHolder extends RecyclerView.ViewHolder {
-        TextView title, author, category;
+        TextView title, author, category, duration, pages;
         ImageView cover;
         CheckBox checkBox;
+        ImageButton buttonPlay, buttonRead;
 
         public BookViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -112,6 +141,10 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
             cover = itemView.findViewById(R.id.image_book_cover);
             category = itemView.findViewById(R.id.text_book_category);
             checkBox = itemView.findViewById(R.id.checkbox_select);
+            duration = itemView.findViewById(R.id.text_book_duration);
+            pages = itemView.findViewById(R.id.text_book_pages);
+            buttonPlay = itemView.findViewById(R.id.button_play_item);
+            buttonRead = itemView.findViewById(R.id.button_read_item);
         }
     }
 }

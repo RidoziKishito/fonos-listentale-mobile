@@ -187,6 +187,7 @@ public class AudioService extends Service {
         int playIcon = isPlaying ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play;
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_notification_transparent)
                 .setSmallIcon(R.drawable.ic_nav_books)
                 .setContentTitle(currentBook != null ? currentBook.getTitle() : "ListenTale")
                 .setContentText(currentBook != null ? "by " + currentBook.getAuthor() : "Ready to listen")

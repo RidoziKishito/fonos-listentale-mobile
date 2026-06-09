@@ -53,14 +53,33 @@ public class SearchFragment extends Fragment {
 
         allBooks = new ArrayList<>();
         filteredBooks = new ArrayList<>();
-        adapter = new BookAdapter(filteredBooks, book -> {
-            hideKeyboard(inputSearch);
-            Bundle bundle = new Bundle();
-            bundle.putSerializable("book", book);
-            Navigation.findNavController(view).navigate(R.id.action_searchFragment_to_bookDetailFragment, bundle);
+        adapter = new BookAdapter(filteredBooks, new BookAdapter.OnBookClickListener() {
+            @Override
+            public void onBookClick(Book book) {
+                hideKeyboard(inputSearch);
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("book", book);
+                Navigation.findNavController(view).navigate(R.id.action_searchFragment_to_bookDetailFragment, bundle);
+            }
+
+            @Override
+            public void onPlayClick(Book book) {
+                hideKeyboard(inputSearch);
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("book", book);
+                Navigation.findNavController(view).navigate(R.id.action_searchFragment_to_audioPlayerFragment, bundle);
+            }
+
+            @Override
+            public void onReadClick(Book book) {
+                hideKeyboard(inputSearch);
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("book", book);
+                Navigation.findNavController(view).navigate(R.id.action_searchFragment_to_ebookReaderFragment, bundle);
+            }
         });
 
-        recyclerResults.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerResults.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(getContext(), 2));
         recyclerResults.setAdapter(adapter);
 
         fetchAllBooks();
