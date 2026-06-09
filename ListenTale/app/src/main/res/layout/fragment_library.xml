@@ -3,27 +3,31 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/slate_50"
+    android:background="@drawable/bg_app_gradient"
     android:fitsSystemWindows="true">
 
     <View
         android:id="@+id/header_bg"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="@color/white"
-        app:layout_constraintBottom_toBottomOf="@+id/tab_layout_library"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_island_glass"
+        app:layout_constraintBottom_toBottomOf="@+id/layout_library_tabs"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/text_library_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
+        android:layout_marginHorizontal="36dp"
         android:layout_marginTop="32dp"
         android:fontFamily="sans-serif-black"
         android:text="My Library"
         android:textColor="@color/slate_900"
-        android:textSize="28sp"
+        android:textSize="29sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -31,10 +35,10 @@
         android:id="@+id/button_toggle_select"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="24dp"
+        android:layout_marginEnd="36dp"
         android:text="Select"
-        android:textColor="@color/violet_600"
-        android:textSize="16sp"
+        android:textColor="@color/accent_vibrant"
+        android:textSize="17sp"
         android:textStyle="bold"
         android:padding="8dp"
         app:layout_constraintBottom_toBottomOf="@id/text_library_title"
@@ -43,13 +47,18 @@
 
     <LinearLayout
         android:id="@+id/layout_selection_controls"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingHorizontal="24dp"
-        android:paddingVertical="8dp"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_library_segment_container"
         android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="8dp"
         android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/text_library_title">
 
         <CheckBox
@@ -57,7 +66,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Select All"
-            android:textColor="@color/slate_600" />
+            android:textColor="@color/slate_700"
+            android:textStyle="bold"
+            android:buttonTint="@color/primary_600" />
 
         <View
             android:layout_width="0dp"
@@ -68,48 +79,75 @@
             android:id="@+id/button_delete_selected"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_delete"
+            android:background="@drawable/bg_circle_white_alpha"
+            android:src="@drawable/ic_detail_trash"
             app:tint="@color/red_600" />
     </LinearLayout>
 
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tab_layout_library"
+    <LinearLayout
+        android:id="@+id/layout_library_tabs"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/layout_selection_controls"
-        app:tabMode="scrollable"
-        app:tabIndicatorColor="@color/violet_600"
-        app:tabSelectedTextColor="@color/violet_600"
-        app:tabTextColor="@color/slate_500">
+        android:layout_marginHorizontal="36dp"
+        android:layout_marginTop="10dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/layout_selection_controls">
 
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Saved" />
+        <TextView
+            android:id="@+id/tab_saved"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_library_tab_text"
+            android:gravity="center"
+            android:text="Saved"
+            android:textColor="@color/library_tab_text_color"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="In Progress" />
+        <TextView
+            android:id="@+id/tab_in_progress"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_library_tab_text"
+            android:gravity="center"
+            android:text="In Progress"
+            android:textColor="@color/library_tab_text_color"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Downloaded" />
+        <TextView
+            android:id="@+id/tab_downloaded"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_library_tab_text"
+            android:gravity="center"
+            android:text="Downloaded"
+            android:textColor="@color/library_tab_text_color"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Completed" />
-    </com.google.android.material.tabs.TabLayout>
+        <TextView
+            android:id="@+id/tab_completed"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_library_tab_text"
+            android:gravity="center"
+            android:text="Completed"
+            android:textColor="@color/library_tab_text_color"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_library"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:padding="24dp"
+        android:padding="32dp"
         android:clipToPadding="false"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/header_bg"

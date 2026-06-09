@@ -3,15 +3,19 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/slate_50"
+    android:background="@drawable/bg_app_gradient"
     android:fitsSystemWindows="true">
 
     <View
         android:id="@+id/header_bg"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="@color/white"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_island_glass"
         app:layout_constraintBottom_toBottomOf="@+id/input_search_layout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.0" />
 
@@ -19,12 +23,12 @@
         android:id="@+id/text_search_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
+        android:layout_marginHorizontal="36dp"
         android:layout_marginTop="32dp"
         android:fontFamily="sans-serif-black"
         android:text="Search"
         android:textColor="@color/slate_900"
-        android:textSize="28sp"
+        android:textSize="32sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -33,26 +37,29 @@
         style="@style/Widget.Material3.TextInputLayout.FilledBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
+        android:layout_marginHorizontal="32dp"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"
         android:hint="Books, authors, or topics"
-        app:boxBackgroundColor="@color/slate_100"
-        app:boxCornerRadiusBottomEnd="16dp"
-        app:boxCornerRadiusBottomStart="16dp"
-        app:boxCornerRadiusTopEnd="16dp"
-        app:boxCornerRadiusTopStart="16dp"
-        app:boxStrokeWidth="0dp"
-        app:boxStrokeWidthFocused="0dp"
+        app:boxBackgroundColor="@color/white"
+        app:boxCornerRadiusBottomEnd="20dp"
+        app:boxCornerRadiusBottomStart="20dp"
+        app:boxCornerRadiusTopEnd="20dp"
+        app:boxCornerRadiusTopStart="20dp"
+        app:boxStrokeColor="@color/primary_200"
+        app:boxStrokeWidth="1dp"
+        app:boxStrokeWidthFocused="2dp"
+        app:hintTextColor="@color/slate_500"
         app:layout_constraintTop_toBottomOf="@id/text_search_title"
         app:startIconDrawable="@android:drawable/ic_menu_search"
-        app:startIconTint="@color/slate_400">
+        app:startIconTint="@color/primary_600">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/input_search"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="text" />
+            android:inputType="text"
+            android:textColor="@color/slate_900" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -73,7 +80,7 @@
                 android:fontFamily="sans-serif-bold"
                 android:text="Top Categories"
                 android:textColor="@color/slate_900"
-                android:textSize="20sp" />
+                android:textSize="22sp" />
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chip_group_categories"
@@ -91,6 +98,12 @@
                     android:layout_height="wrap_content"
                     android:text="Romance"
                     android:checkable="true"
+                    app:chipBackgroundColor="@color/primary_light"
+                    app:chipStrokeColor="@color/primary_200"
+                    app:chipStrokeWidth="1dp"
+                    app:checkedIconTint="@color/primary_600"
+                    app:rippleColor="@color/primary_200"
+                    android:textColor="@color/primary_700"
                     app:chipCornerRadius="24dp" />
 
                 <com.google.android.material.chip.Chip
@@ -100,6 +113,12 @@
                     android:layout_height="wrap_content"
                     android:text="Self-Help"
                     android:checkable="true"
+                    app:chipBackgroundColor="@color/accent_soft"
+                    app:chipStrokeColor="#FFC9C9"
+                    app:chipStrokeWidth="1dp"
+                    app:checkedIconTint="@color/accent_vibrant"
+                    app:rippleColor="#22FF6B6B"
+                    android:textColor="@color/slate_700"
                     app:chipCornerRadius="24dp" />
 
                 <com.google.android.material.chip.Chip
@@ -109,6 +128,11 @@
                     android:layout_height="wrap_content"
                     android:text="Philosophy"
                     android:checkable="true"
+                    app:chipBackgroundColor="@color/sky_200"
+                    app:chipStrokeColor="#7DD3FC"
+                    app:chipStrokeWidth="1dp"
+                    app:checkedIconTint="@color/primary_700"
+                    android:textColor="@color/slate_700"
                     app:chipCornerRadius="24dp" />
 
                 <com.google.android.material.chip.Chip
@@ -118,6 +142,11 @@
                     android:layout_height="wrap_content"
                     android:text="Classic"
                     android:checkable="true"
+                    app:chipBackgroundColor="@color/sunshine_200"
+                    app:chipStrokeColor="#FCD34D"
+                    app:chipStrokeWidth="1dp"
+                    app:checkedIconTint="@color/amber_500"
+                    android:textColor="@color/slate_700"
                     app:chipCornerRadius="24dp" />
 
                 <com.google.android.material.chip.Chip
@@ -127,6 +156,11 @@
                     android:layout_height="wrap_content"
                     android:text="Mystery"
                     android:checkable="true"
+                    app:chipBackgroundColor="@color/white"
+                    app:chipStrokeColor="@color/primary_200"
+                    app:chipStrokeWidth="1dp"
+                    app:checkedIconTint="@color/primary_600"
+                    android:textColor="@color/slate_700"
                     app:chipCornerRadius="24dp" />
 
                 <com.google.android.material.chip.Chip
@@ -136,6 +170,11 @@
                     android:layout_height="wrap_content"
                     android:text="Children"
                     android:checkable="true"
+                    app:chipBackgroundColor="@color/primary_light"
+                    app:chipStrokeColor="@color/primary_200"
+                    app:chipStrokeWidth="1dp"
+                    app:checkedIconTint="@color/primary_600"
+                    android:textColor="@color/primary_700"
                     app:chipCornerRadius="24dp" />
             </com.google.android.material.chip.ChipGroup>
 
@@ -155,7 +194,7 @@
                 android:fontFamily="sans-serif-bold"
                 android:text="Recent Searches"
                 android:textColor="@color/slate_900"
-                android:textSize="20sp" />
+                android:textSize="22sp" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler_recent_searches"

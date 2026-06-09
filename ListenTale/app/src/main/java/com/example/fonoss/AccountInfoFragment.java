@@ -6,7 +6,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -68,7 +67,7 @@ public class AccountInfoFragment extends Fragment {
         String newName = editName.getText().toString().trim();
 
         if (newName.isEmpty()) {
-            Toast.makeText(getContext(), "Name cannot be empty", Toast.LENGTH_SHORT).show();
+            UiNotifier.warning(getContext(), "Name cannot be empty");
             return;
         }
 
@@ -79,6 +78,6 @@ public class AccountInfoFragment extends Fragment {
         textNameDisplay.setVisibility(View.VISIBLE);
         editName.setVisibility(View.GONE);
 
-        Toast.makeText(getContext(), "Profile updated", Toast.LENGTH_SHORT).show();
+        UiNotifier.success(getContext(), "Profile updated");
     }
 }

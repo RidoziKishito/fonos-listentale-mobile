@@ -14,7 +14,6 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -86,7 +85,7 @@ public class BookDetailFragment extends Fragment {
                 bundle.putSerializable("book", currentBook);
                 Navigation.findNavController(v).navigate(R.id.action_bookDetailFragment_to_audioPlayerFragment, bundle);
             } else {
-                Toast.makeText(getContext(), "Connect to internet to listen to this book", Toast.LENGTH_SHORT).show();
+                UiNotifier.warning(getContext(), "Connect to internet to listen");
             }
         });
 
@@ -97,7 +96,7 @@ public class BookDetailFragment extends Fragment {
                 bundle.putSerializable("book", currentBook);
                 Navigation.findNavController(v).navigate(R.id.action_bookDetailFragment_to_ebookReaderFragment, bundle);
             } else {
-                Toast.makeText(getContext(), "Connect to internet to read this book", Toast.LENGTH_SHORT).show();
+                UiNotifier.warning(getContext(), "Connect to internet to read");
             }
         });
 
@@ -146,7 +145,7 @@ public class BookDetailFragment extends Fragment {
                 libraryViewModel.addDownload(currentBook);
                 progressDownload.setVisibility(View.GONE);
                 buttonDownload.setVisibility(View.VISIBLE);
-                Toast.makeText(getContext(), "Download complete", Toast.LENGTH_SHORT).show();
+                UiNotifier.success(getContext(), "Download complete");
             }
         }, 2000);
     }
@@ -159,27 +158,27 @@ public class BookDetailFragment extends Fragment {
                 libraryViewModel.removeDownload(currentBook.getId());
                 progressDownload.setVisibility(View.GONE);
                 buttonDownload.setVisibility(View.VISIBLE);
-                Toast.makeText(getContext(), "Deleted from device", Toast.LENGTH_SHORT).show();
+                UiNotifier.info(getContext(), "Deleted from device");
             }
         }, 1500);
     }
 
     private void updateFavoriteUI() {
         if (currentBook != null && libraryViewModel.isFavorite(currentBook.getId())) {
-            buttonFavorite.setImageResource(android.R.drawable.btn_star_big_on);
-            buttonFavorite.setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.amber_500)));
+            buttonFavorite.setImageResource(R.drawable.ic_detail_heart_filled);
+            buttonFavorite.setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.accent_vibrant)));
         } else {
-            buttonFavorite.setImageResource(android.R.drawable.btn_star_big_off);
+            buttonFavorite.setImageResource(R.drawable.ic_detail_heart);
             buttonFavorite.setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.slate_900)));
         }
     }
 
     private void updateDownloadUI() {
         if (currentBook != null && libraryViewModel.isDownloaded(currentBook.getId())) {
-            buttonDownload.setImageResource(android.R.drawable.ic_menu_delete);
+            buttonDownload.setImageResource(R.drawable.ic_detail_trash);
             buttonDownload.setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.red_600)));
         } else {
-            buttonDownload.setImageResource(android.R.drawable.stat_sys_download);
+            buttonDownload.setImageResource(R.drawable.ic_detail_download);
             buttonDownload.setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.slate_900)));
         }
     }

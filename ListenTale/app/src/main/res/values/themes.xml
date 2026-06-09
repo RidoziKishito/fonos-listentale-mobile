@@ -24,6 +24,16 @@
         <item name="cornerSize">32dp</item>
     </style>
 
+    <style name="Widget.Fonoss.BottomNav.TransparentIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@android:color/transparent</item>
+    </style>
+
+    <style name="TextAppearance.Fonoss.BottomNav" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-bold</item>
+    </style>
+
     <style name="Theme.Fonoss.VibrantStatusBar" parent="Theme.Fonoss">
         <item name="android:statusBarColor">@color/primary_600</item>
         <item name="android:windowLightStatusBar">false</item>
