@@ -96,9 +96,14 @@ public class WelcomeFragment extends Fragment {
             Navigation.findNavController(v).navigate(R.id.action_welcomeFragment_to_registerFragment)
         );
 
-        onboardingSlider.addOnChangeListener((slider, value, fromUser) -> 
-            textSliderValue.setText((int)value + " books / year")
-        );
+        onboardingSlider.addOnChangeListener((slider, value, fromUser) -> {
+            int intValue = (int) value;
+            if (intValue >= 51) {
+                textSliderValue.setText("50+ books / year");
+            } else {
+                textSliderValue.setText(intValue + " books / year");
+            }
+        });
 
         updateUI();
     }

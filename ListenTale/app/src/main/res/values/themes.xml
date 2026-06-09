@@ -24,6 +24,12 @@
         <item name="cornerSize">32dp</item>
     </style>
 
+    <style name="LibraryTabTextAppearance" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">normal</item>
+        <item name="textAllCaps">false</item>
+    </style>
+
     <style name="Theme.Fonoss.VibrantStatusBar" parent="Theme.Fonoss">
         <item name="android:statusBarColor">@color/primary_600</item>
         <item name="android:windowLightStatusBar">false</item>

@@ -39,19 +39,33 @@ public class BooksFragment extends Fragment {
         
         db = FirebaseFirestore.getInstance();
         loadingBar = view.findViewById(R.id.loading_bar);
+
+        view.findViewById(R.id.button_start_selection).setOnClickListener(v ->
+                new DownloadBookDialog().show(getChildFragmentManager(), "DownloadBookDialog"));
+        view.findViewById(R.id.button_download_history).setOnClickListener(v -> {
+            new DownloadHistoryDialog().show(getChildFragmentManager(), "DownloadHistory");
+        });
         
         // Setup Trending
         trendingBooks = new ArrayList<>();
         RecyclerView recyclerTrending = view.findViewById(R.id.recycler_trending);
         recyclerTrending.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
-        trendingAdapter = new BookAdapter(trendingBooks, this::onBookClick);
+        trendingAdapter = new BookAdapter(trendingBooks, new BookAdapter.OnBookClickListener() {
+            @Override public void onBookClick(Book book) { BooksFragment.this.onBookClick(book); }
+            @Override public void onPlayClick(Book book) { BooksFragment.this.onPlayClick(book); }
+            @Override public void onReadClick(Book book) { BooksFragment.this.onReadClick(book); }
+        });
         recyclerTrending.setAdapter(trendingAdapter);
 
         // Setup Recommended
         recommendedBooks = new ArrayList<>();
         RecyclerView recyclerRecommended = view.findViewById(R.id.recycler_recommended);
         recyclerRecommended.setLayoutManager(new LinearLayoutManager(getContext()));
-        recommendedAdapter = new BookAdapter(recommendedBooks, this::onBookClick, true); // Horizontal style
+        recommendedAdapter = new BookAdapter(recommendedBooks, new BookAdapter.OnBookClickListener() {
+            @Override public void onBookClick(Book book) { BooksFragment.this.onBookClick(book); }
+            @Override public void onPlayClick(Book book) { BooksFragment.this.onPlayClick(book); }
+            @Override public void onReadClick(Book book) { BooksFragment.this.onReadClick(book); }
+        }, true); // Horizontal style
         recyclerRecommended.setAdapter(recommendedAdapter);
 
         fetchBooks();
@@ -65,6 +79,18 @@ public class BooksFragment extends Fragment {
         Bundle bundle = new Bundle();
         bundle.putSerializable("book", book);
         Navigation.findNavController(requireView()).navigate(R.id.action_booksFragment_to_bookDetailFragment, bundle);
+    }
+
+    private void onPlayClick(Book book) {
+        Bundle bundle = new Bundle();
+        bundle.putSerializable("book", book);
+        Navigation.findNavController(requireView()).navigate(R.id.action_booksFragment_to_audioPlayerFragment, bundle);
+    }
+
+    private void onReadClick(Book book) {
+        Bundle bundle = new Bundle();
+        bundle.putSerializable("book", book);
+        Navigation.findNavController(requireView()).navigate(R.id.action_booksFragment_to_ebookReaderFragment, bundle);
     }
 
     private void fetchBooks() {

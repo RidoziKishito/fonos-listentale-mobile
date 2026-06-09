@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white">
@@ -9,7 +10,7 @@
         android:id="@+id/image_cover_bg"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:scaleType="centerCrop"
+        android:scaleType="fitCenter"
         android:src="@android:drawable/ic_menu_gallery"
         app:layout_constraintHeight_percent="0.45"
         app:layout_constraintTop_toTopOf="parent" />
@@ -238,6 +239,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:lineSpacingExtra="4dp"
+                android:justificationMode="inter_word"
+                tools:targetApi="o"
                 android:text="Description..."
                 android:textColor="@color/slate_600"
                 android:textSize="14sp" />

@@ -16,15 +16,47 @@
             android:orientation="vertical"
             android:paddingBottom="24dp">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <RelativeLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="24dp"
-                android:layout_marginTop="32dp"
-                android:fontFamily="sans-serif-black"
-                android:text="Discover"
-                android:textColor="@color/slate_900"
-                android:textSize="28sp" />
+                android:layout_marginTop="32dp">
+
+                <TextView
+                    android:id="@+id/text_discover_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-black"
+                    android:text="Discover"
+                    android:textColor="@color/slate_900"
+                    android:textSize="28sp" />
+
+                <LinearLayout
+                    android:id="@+id/layout_discover_actions"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:orientation="horizontal">
+
+                    <ImageButton
+                        android:id="@+id/button_download_history"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@android:drawable/ic_menu_agenda"
+                        app:tint="@color/slate_700" />
+
+                    <ImageButton
+                        android:id="@+id/button_start_selection"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_marginStart="8dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@android:drawable/stat_sys_download"
+                        app:tint="@color/primary_600" />
+                </LinearLayout>
+            </RelativeLayout>
 
             <com.google.android.material.tabs.TabLayout
                 android:id="@+id/tab_layout"

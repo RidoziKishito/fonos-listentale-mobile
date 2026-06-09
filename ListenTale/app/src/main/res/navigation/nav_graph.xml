@@ -59,6 +59,12 @@
         <action
             android:id="@+id/action_booksFragment_to_seeAllFragment"
             app:destination="@id/seeAllFragment" />
+        <action
+            android:id="@+id/action_booksFragment_to_audioPlayerFragment"
+            app:destination="@id/audioPlayerFragment" />
+        <action
+            android:id="@+id/action_booksFragment_to_ebookReaderFragment"
+            app:destination="@id/ebookReaderFragment" />
     </fragment>
 
     <fragment
@@ -69,6 +75,12 @@
         <action
             android:id="@+id/action_seeAllFragment_to_bookDetailFragment"
             app:destination="@id/bookDetailFragment" />
+        <action
+            android:id="@+id/action_seeAllFragment_to_audioPlayerFragment"
+            app:destination="@id/audioPlayerFragment" />
+        <action
+            android:id="@+id/action_seeAllFragment_to_ebookReaderFragment"
+            app:destination="@id/ebookReaderFragment" />
     </fragment>
 
     <fragment
@@ -79,6 +91,12 @@
         <action
             android:id="@+id/action_searchFragment_to_bookDetailFragment"
             app:destination="@id/bookDetailFragment" />
+        <action
+            android:id="@+id/action_searchFragment_to_audioPlayerFragment"
+            app:destination="@id/audioPlayerFragment" />
+        <action
+            android:id="@+id/action_searchFragment_to_ebookReaderFragment"
+            app:destination="@id/ebookReaderFragment" />
     </fragment>
 
     <fragment
@@ -89,6 +107,12 @@
         <action
             android:id="@+id/action_libraryFragment_to_bookDetailFragment"
             app:destination="@id/bookDetailFragment" />
+        <action
+            android:id="@+id/action_libraryFragment_to_audioPlayerFragment"
+            app:destination="@id/audioPlayerFragment" />
+        <action
+            android:id="@+id/action_libraryFragment_to_ebookReaderFragment"
+            app:destination="@id/ebookReaderFragment" />
     </fragment>
 
     <fragment

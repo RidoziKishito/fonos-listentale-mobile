@@ -66,6 +66,20 @@ public class LibraryFragment extends Fragment {
             }
 
             @Override
+            public void onPlayClick(Book book) {
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("book", book);
+                Navigation.findNavController(view).navigate(R.id.action_libraryFragment_to_audioPlayerFragment, bundle);
+            }
+
+            @Override
+            public void onReadClick(Book book) {
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("book", book);
+                Navigation.findNavController(view).navigate(R.id.action_libraryFragment_to_ebookReaderFragment, bundle);
+            }
+
+            @Override
             public void onSelectionChanged(int count) {
                 updateSelectAllState();
             }
