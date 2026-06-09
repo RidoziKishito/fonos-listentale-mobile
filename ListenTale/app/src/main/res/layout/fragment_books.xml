@@ -40,18 +40,9 @@
                     android:orientation="horizontal">
 
                     <ImageButton
-                        android:id="@+id/button_download_history"
+                        android:id="@+id/button_download_manager"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:src="@android:drawable/ic_menu_agenda"
-                        app:tint="@color/slate_700" />
-
-                    <ImageButton
-                        android:id="@+id/button_start_selection"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:layout_marginStart="8dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:src="@android:drawable/stat_sys_download"
                         app:tint="@color/primary_600" />

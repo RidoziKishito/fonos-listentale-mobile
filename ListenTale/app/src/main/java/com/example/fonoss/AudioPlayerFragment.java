@@ -72,6 +72,14 @@ public class AudioPlayerFragment extends Fragment {
             audioService = binder.getService();
             isBound = true;
 
+            audioService.setListener(isPlaying -> {
+                updatePlayPauseIcon();
+                if (isPlaying) {
+                    handler.removeCallbacks(updateProgressTask);
+                    handler.post(updateProgressTask);
+                }
+            });
+
             Book serviceBook = audioService.getCurrentBook();
             
             if (currentBook != null) {
@@ -294,7 +302,11 @@ public class AudioPlayerFragment extends Fragment {
             int duration = audioService.getTotalDuration();
             textCurrentTime.setText(formatTime(pos));
             textTotalTime.setText(formatTime(duration));
-            playerSlider.setValue((float) pos / duration * 100);
+            if (duration > 0) {
+                playerSlider.setValue(Math.max(0f, Math.min(100f, (float) pos / duration * 100)));
+            } else {
+                playerSlider.setValue(0f);
+            }
         }
     }
 
@@ -323,6 +335,7 @@ public class AudioPlayerFragment extends Fragment {
             if (currentBook != null && audioService != null) {
                 int pos = audioService.getCurrentPosition();
                 if (pos > 0) libraryViewModel.savePlaybackPosition(currentBook.getId(), pos);
+                audioService.setListener(null);
             }
             requireContext().unbindService(connection);
         }

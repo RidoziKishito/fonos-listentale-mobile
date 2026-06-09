@@ -18,6 +18,16 @@ import android.support.v4.media.session.PlaybackStateCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.media.app.NotificationCompat.MediaStyle;
+import android.media.AudioAttributes;
+import android.media.MediaPlayer;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
+import android.widget.Toast;
 
 public class AudioService extends Service {
 
@@ -27,22 +37,64 @@ public class AudioService extends Service {
     private final IBinder binder = new LocalBinder();
     private boolean isPlaying = false;
     private int currentPosition = 0;
-    private final int totalDuration = 1800; 
+    private int totalDuration = 0;
     private float playbackSpeed = 1.0f;
     private Book currentBook;
     private MediaSessionCompat mediaSession;
+    private MediaPlayer mediaPlayer;
+    private NetworkChangeReceiver networkChangeReceiver;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable progressRunnable = new Runnable() {
         @Override
         public void run() {
-            if (isPlaying && currentPosition < totalDuration) {
-                currentPosition++;
+            if (isPlaying && mediaPlayer != null) {
+                currentPosition = mediaPlayer.getCurrentPosition() / 1000;
                 updatePlaybackState();
-                handler.postDelayed(this, (long) (1000 / playbackSpeed));
+                handler.postDelayed(this, 1000);
             }
         }
     };
+
+    public interface PlaybackStateListener {
+        void onStateChanged(boolean isPlaying);
+    }
+    private PlaybackStateListener listener;
+    public void setListener(PlaybackStateListener listener) { this.listener = listener; }
+
+    private class NetworkChangeReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (ConnectivityManager.CONNECTIVITY_ACTION.equals(intent.getAction())) {
+                ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+                if (cm != null) {
+                    boolean isMobile = false;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        Network network = cm.getActiveNetwork();
+                        if (network != null) {
+                            NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
+                            if (capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+                                isMobile = true;
+                            }
+                        }
+                    } else {
+                        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+                        if (activeNetwork != null && activeNetwork.getType() == ConnectivityManager.TYPE_MOBILE) {
+                            isMobile = true;
+                        }
+                    }
+
+                    if (isMobile && isPlaying) {
+                        pause();
+                        Intent alertIntent = new Intent("com.example.fonoss.NETWORK_WARNING");
+                        alertIntent.putExtra("message", "You are using Mobile Data. Playback has been paused to prevent unexpected data costs.");
+                        alertIntent.setPackage(context.getPackageName());
+                        context.sendBroadcast(alertIntent);
+                    }
+                }
+            }
+        }
+    }
 
     public class LocalBinder extends Binder {
         AudioService getService() { return AudioService.this; }
@@ -55,6 +107,9 @@ public class AudioService extends Service {
         mediaSession = new MediaSessionCompat(this, "ListenTaleSession");
         setupMediaSession();
         
+        networkChangeReceiver = new NetworkChangeReceiver();
+        registerReceiver(networkChangeReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+
         startForeground(NOTIFICATION_ID, getNotification());
     }
 
@@ -71,11 +126,12 @@ public class AudioService extends Service {
         if (mediaSession == null) return;
         int state = isPlaying ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED;
         mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
-                .setActions(PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PAUSE | 
-                            PlaybackStateCompat.ACTION_SEEK_TO | PlaybackStateCompat.ACTION_SKIP_TO_NEXT | 
+                .setActions(PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PAUSE |
+                            PlaybackStateCompat.ACTION_SEEK_TO | PlaybackStateCompat.ACTION_SKIP_TO_NEXT |
                             PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
                 .setState(state, currentPosition * 1000L, playbackSpeed)
                 .build());
+        if (listener != null) listener.onStateChanged(isPlaying);
     }
 
     private void updateMetadata() {
@@ -100,18 +156,64 @@ public class AudioService extends Service {
         if (currentBook == null || !currentBook.getId().equals(book.getId())) {
             this.currentBook = book;
             this.currentPosition = 0;
+            this.totalDuration = 0;
             updateMetadata();
+
+            if (mediaPlayer != null) {
+                mediaPlayer.release();
+                mediaPlayer = null;
+            }
+
+            java.io.File localAudio = new java.io.File(getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC), "audio_" + book.getId() + ".mp3");
+            String dataSource = localAudio.exists() ? localAudio.getAbsolutePath() : book.getAudio_link();
+
+            if (dataSource != null && !dataSource.isEmpty()) {
+                try {
+                    mediaPlayer = new MediaPlayer();
+                    mediaPlayer.setAudioAttributes(
+                        new AudioAttributes.Builder()
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .build()
+                    );
+                    mediaPlayer.setDataSource(dataSource);
+                    mediaPlayer.setOnPreparedListener(mp -> {
+                        totalDuration = mp.getDuration() / 1000;
+                        updateMetadata();
+                        play();
+                    });
+                    mediaPlayer.setOnCompletionListener(mp -> {
+                        isPlaying = false;
+                        updatePlaybackState();
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            stopForeground(STOP_FOREGROUND_DETACH);
+                        } else {
+                            stopForeground(false);
+                        }
+                    });
+                    mediaPlayer.prepareAsync();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        } else {
+            play();
         }
-        play();
     }
 
     public void play() {
-        if (currentBook == null) return;
+        if (currentBook == null || mediaPlayer == null) return;
         isPlaying = true;
+        mediaPlayer.start();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                mediaPlayer.setPlaybackParams(mediaPlayer.getPlaybackParams().setSpeed(playbackSpeed));
+            } catch (Exception e) { e.printStackTrace(); }
+        }
         handler.removeCallbacks(progressRunnable);
         handler.post(progressRunnable);
         updatePlaybackState();
-        
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(NOTIFICATION_ID, getNotification(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
         } else {
@@ -120,18 +222,19 @@ public class AudioService extends Service {
     }
 
     public void pause() {
-        if (currentBook == null) return;
+        if (currentBook == null || mediaPlayer == null) return;
         isPlaying = false;
+        if (mediaPlayer.isPlaying()) mediaPlayer.pause();
         handler.removeCallbacks(progressRunnable);
         updatePlaybackState();
-        
+
         // Dừng trạng thái foreground nhưng vẫn giữ thông báo
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(STOP_FOREGROUND_DETACH);
         } else {
             stopForeground(false);
         }
-        
+
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (manager != null) manager.notify(NOTIFICATION_ID, getNotification());
     }
@@ -142,13 +245,25 @@ public class AudioService extends Service {
     }
 
     public void seekTo(int seconds) {
-        currentPosition = Math.max(0, Math.min(seconds, totalDuration));
+        if (mediaPlayer != null) {
+            mediaPlayer.seekTo(seconds * 1000);
+            currentPosition = seconds;
+        } else {
+            currentPosition = Math.max(0, Math.min(seconds, totalDuration));
+        }
         updatePlaybackState();
         startForeground(NOTIFICATION_ID, getNotification());
     }
 
     public void setPlaybackSpeed(float speed) {
         this.playbackSpeed = speed;
+        if (mediaPlayer != null && isPlaying) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                try {
+                    mediaPlayer.setPlaybackParams(mediaPlayer.getPlaybackParams().setSpeed(speed));
+                } catch (Exception e) { e.printStackTrace(); }
+            }
+        }
         if (isPlaying) {
             handler.removeCallbacks(progressRunnable);
             handler.post(progressRunnable);
@@ -210,7 +325,14 @@ public class AudioService extends Service {
     @Override
     public void onDestroy() {
         handler.removeCallbacks(progressRunnable);
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
         if (mediaSession != null) mediaSession.release();
+        if (networkChangeReceiver != null) {
+            unregisterReceiver(networkChangeReceiver);
+        }
         super.onDestroy();
     }
 }

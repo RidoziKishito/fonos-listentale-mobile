@@ -3,10 +3,6 @@ package com.example.fonoss;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
-import androidx.work.Data;
-import androidx.work.ExistingWorkPolicy;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.WorkManager;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -15,8 +11,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import com.google.firebase.firestore.DocumentReference;
 
 public class LibraryViewModel extends ViewModel {
@@ -27,6 +25,7 @@ public class LibraryViewModel extends ViewModel {
     private final MutableLiveData<Map<String, Long>> bookProgressPos = new MutableLiveData<>(new HashMap<>());
     private final MutableLiveData<Map<String, Long>> bookProgressChapter = new MutableLiveData<>(new HashMap<>());
     private final MutableLiveData<List<Bookmark>> bookmarks = new MutableLiveData<>(new ArrayList<>());
+    private final Set<String> pendingDeletedDownloadIds = new HashSet<>();
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private final FirebaseAuth mAuth = FirebaseAuth.getInstance();
@@ -38,6 +37,9 @@ public class LibraryViewModel extends ViewModel {
     public LiveData<Map<String, Long>> getBookProgressPos() { return bookProgressPos; }
     public LiveData<Map<String, Long>> getBookProgressChapter() { return bookProgressChapter; }
     public LiveData<List<Bookmark>> getBookmarks() { return bookmarks; }
+    public LiveData<Map<String, Integer>> getDownloadProgress() {
+        return DownloadQueueManager.getInstance(mAuth.getApp().getApplicationContext()).getProgressMap();
+    }
 
     public void fetchLibraryData() {
         FirebaseUser user = mAuth.getCurrentUser();
@@ -50,6 +52,7 @@ public class LibraryViewModel extends ViewModel {
                         updateListFromMap(snapshot, "downloaded", downloadedBooks);
                         updateListFromMap(snapshot, "inProgress", inProgressBooks);
                         updateListFromMap(snapshot, "completed", completedBooks);
+                        reconcilePendingDeletedDownloads(snapshot);
                         
                         Object posObj = snapshot.get("progressPositions");
                         if (posObj instanceof Map) bookProgressPos.setValue((Map<String, Long>) posObj);
@@ -66,6 +69,7 @@ public class LibraryViewModel extends ViewModel {
         List<Book> remoteDownloaded = downloadedBooks.getValue();
         if (remoteDownloaded == null) return;
         for (Book book : remoteDownloaded) {
+            if (book == null || book.getId() == null || pendingDeletedDownloadIds.contains(book.getId())) continue;
             String fileName = "book_" + book.getId() + ".dat";
             java.io.File file = mAuth.getApp().getApplicationContext().getFileStreamPath(fileName);
             if (!file.exists()) {
@@ -87,6 +91,18 @@ public class LibraryViewModel extends ViewModel {
             for (String fileName : files) {
                 if (fileName.startsWith("book_") && fileName.endsWith(".dat")) {
                     context.deleteFile(fileName);
+                }
+            }
+        }
+        
+        java.io.File musicDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC);
+        if (musicDir != null && musicDir.exists()) {
+            java.io.File[] mp3Files = musicDir.listFiles();
+            if (mp3Files != null) {
+                for (java.io.File file : mp3Files) {
+                    if (file.getName().startsWith("audio_") && file.getName().endsWith(".mp3")) {
+                        file.delete();
+                    }
                 }
             }
         }
@@ -114,6 +130,15 @@ public class LibraryViewModel extends ViewModel {
                 ));
             }
         }
+        if ("downloaded".equals(key) && !pendingDeletedDownloadIds.isEmpty()) {
+            List<Book> filteredBooks = new ArrayList<>();
+            for (Book book : books) {
+                if (book != null && !pendingDeletedDownloadIds.contains(book.getId())) {
+                    filteredBooks.add(book);
+                }
+            }
+            books = filteredBooks;
+        }
         liveData.setValue(books);
     }
 
@@ -122,27 +147,27 @@ public class LibraryViewModel extends ViewModel {
 
     public void enqueueSequentialDownloads(List<Book> books) {
         if (books == null || books.isEmpty() || mAuth.getCurrentUser() == null) return;
-        
-        WorkManager workManager = WorkManager.getInstance(mAuth.getApp().getApplicationContext());
-        String userId = mAuth.getCurrentUser().getUid();
-
         for (Book book : books) {
-            OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(DownloadWorker.class)
-                    .setInputData(new Data.Builder()
-                            .putString("BOOK_ID", book.getId())
-                            .putString("BOOK_TITLE", book.getTitle())
-                            .putString("USER_ID", userId)
-                            .build())
-                    .addTag("DOWNLOAD_QUEUE")
-                    .build();
-            
-            workManager.beginUniqueWork("SEQUENTIAL_DOWNLOADS", ExistingWorkPolicy.APPEND, request).enqueue();
+            if (book != null && book.getId() != null) pendingDeletedDownloadIds.remove(book.getId());
         }
+        DownloadQueueManager.getInstance(mAuth.getApp().getApplicationContext())
+                .enqueue(books, mAuth.getCurrentUser().getUid());
+    }
+
+    public void cancelDownload(String bookId) {
+        if (bookId == null) return;
+        DownloadQueueManager.getInstance(mAuth.getApp().getApplicationContext()).cancel(bookId);
     }
 
     public void removeDownload(String bookId) {
+        if (bookId == null) return;
         Book book = findInList(downloadedBooks.getValue(), bookId);
+        pendingDeletedDownloadIds.add(bookId);
+        cancelDownload(bookId);
+        deleteBookFromInternalStorage(bookId);
+        removeBookFromDownloadedLiveData(bookId);
         if (book != null) updateLibraryItem("downloaded", book, false);
+        else removeFromCollectionManual("downloaded", bookId);
     }
 
     public void savePlaybackPosition(String bookId, int seconds) {
@@ -274,8 +299,11 @@ public class LibraryViewModel extends ViewModel {
                             if (!idsToRemove.contains(bookId)) {
                                 newList.add(item);
                             } else if (colName.equals("downloaded")) {
+                                pendingDeletedDownloadIds.add(bookId);
+                                cancelDownload(bookId);
                                 // Chỉ xóa file nếu xóa từ mục Downloaded
                                 deleteBookFromInternalStorage(bookId);
+                                removeBookFromDownloadedLiveData(bookId);
                             }
                         }
                         updates.put(colName, newList);
@@ -311,7 +339,12 @@ public class LibraryViewModel extends ViewModel {
         if (user == null) return;
         if (collection.equals("downloaded")) {
             if (add) saveBookToInternalStorage(book);
-            else deleteBookFromInternalStorage(book.getId());
+            else {
+                pendingDeletedDownloadIds.add(book.getId());
+                cancelDownload(book.getId());
+                deleteBookFromInternalStorage(book.getId());
+                removeBookFromDownloadedLiveData(book.getId());
+            }
         }
         if (add) {
             Map<String, Object> bookMap = new HashMap<>();
@@ -328,26 +361,66 @@ public class LibraryViewModel extends ViewModel {
 
     private void saveBookToInternalStorage(Book book) {
         try {
-            java.io.FileOutputStream fos = mAuth.getApp().getApplicationContext().openFileOutput("book_" + book.getId() + ".dat", android.content.Context.MODE_PRIVATE);
-            java.io.ObjectOutputStream oos = new java.io.ObjectOutputStream(fos);
-            oos.writeObject(book);
-            oos.close();
-            fos.close();
+            LocalBookStorage.save(mAuth.getApp().getApplicationContext(), book);
         } catch (Exception e) { e.printStackTrace(); }
     }
 
     private void deleteBookFromInternalStorage(String bookId) {
-        mAuth.getApp().getApplicationContext().deleteFile("book_" + bookId + ".dat");
+        if (bookId == null) return;
+        android.content.Context context = mAuth.getApp().getApplicationContext();
+        context.deleteFile("book_" + bookId + ".dat");
+        
+        java.io.File musicDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC);
+        if (musicDir != null) {
+            java.io.File mp3File = new java.io.File(musicDir, "audio_" + bookId + ".mp3");
+            if (mp3File.exists()) {
+                mp3File.delete();
+            }
+            java.io.File tempFile = new java.io.File(musicDir, "audio_" + bookId + ".tmp");
+            if (tempFile.exists()) {
+                tempFile.delete();
+            }
+        }
+    }
+
+    private void removeBookFromDownloadedLiveData(String bookId) {
+        List<Book> current = downloadedBooks.getValue();
+        if (current == null) return;
+
+        List<Book> updated = new ArrayList<>();
+        for (Book book : current) {
+            if (book != null && !bookId.equals(book.getId())) {
+                updated.add(book);
+            }
+        }
+        downloadedBooks.setValue(updated);
+    }
+
+    private void reconcilePendingDeletedDownloads(com.google.firebase.firestore.DocumentSnapshot snapshot) {
+        if (pendingDeletedDownloadIds.isEmpty()) return;
+
+        Object data = snapshot.get("downloaded");
+        Set<String> remoteDownloadedIds = new HashSet<>();
+        if (data instanceof List) {
+            List<Map<String, Object>> list = (List<Map<String, Object>>) data;
+            for (Map<String, Object> item : list) {
+                Object id = item.get("id");
+                if (id instanceof String) remoteDownloadedIds.add((String) id);
+            }
+        }
+
+        List<String> completedDeletes = new ArrayList<>();
+        for (String bookId : pendingDeletedDownloadIds) {
+            if (!remoteDownloadedIds.contains(bookId)) {
+                completedDeletes.add(bookId);
+            }
+        }
+        pendingDeletedDownloadIds.removeAll(completedDeletes);
     }
 
     public Book loadBookLocally(String bookId) {
         try {
-            java.io.FileInputStream fis = mAuth.getApp().getApplicationContext().openFileInput("book_" + bookId + ".dat");
-            java.io.ObjectInputStream ois = new java.io.ObjectInputStream(fis);
-            Book book = (Book) ois.readObject();
-            ois.close();
-            fis.close();
-            return book;
+            return LocalBookStorage.load(mAuth.getApp().getApplicationContext(), bookId);
         } catch (Exception e) { return null; }
     }
 

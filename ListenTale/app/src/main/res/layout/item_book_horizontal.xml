@@ -34,7 +34,9 @@
                 android:layout_gravity="top|start"
                 android:layout_margin="-8dp"
                 android:visibility="gone"
-                android:buttonTint="@color/primary_600" />
+                android:button="@drawable/sl_checkbox"
+                android:buttonTint="@null"
+                app:buttonTint="@null" />
         </FrameLayout>
 
         <LinearLayout

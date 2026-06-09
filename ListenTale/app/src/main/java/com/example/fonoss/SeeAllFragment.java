@@ -1,6 +1,7 @@
 package com.example.fonoss;
 
 import android.os.Bundle;
+import android.graphics.Rect;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,6 +39,20 @@ public class SeeAllFragment extends Fragment {
         allBooks = new ArrayList<>();
         RecyclerView recyclerView = view.findViewById(R.id.recycler_see_all);
         recyclerView.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(getContext(), 2));
+        recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
+            private final int spacing = (int) (12 * getResources().getDisplayMetrics().density);
+
+            @Override
+            public void getItemOffsets(@NonNull Rect outRect, @NonNull View itemView,
+                                       @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+                int position = parent.getChildAdapterPosition(itemView);
+                if (position == RecyclerView.NO_POSITION) return;
+                int column = position % 2;
+                outRect.left = column == 0 ? 0 : spacing / 2;
+                outRect.right = column == 0 ? spacing / 2 : 0;
+                outRect.bottom = spacing;
+            }
+        });
         
         adapter = new BookAdapter(allBooks, new BookAdapter.OnBookClickListener() {
             @Override

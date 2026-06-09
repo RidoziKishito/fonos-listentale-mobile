@@ -15,6 +15,7 @@ public class Book implements Serializable {
     private double rating;
     private String coverUrl;
     private transient List<String> chapters;
+    private String audio_link;
 
     public Book() {
         this.chapters = new ArrayList<>();
@@ -60,4 +61,7 @@ public class Book implements Serializable {
     public void setRating(double rating) { this.rating = rating; }
     public void setCoverUrl(String coverUrl) { this.coverUrl = coverUrl; }
     public void setChapters(List<String> chapters) { this.chapters = chapters; }
+
+    public String getAudio_link() { return audio_link; }
+    public void setAudio_link(String audio_link) { this.audio_link = audio_link; }
 }

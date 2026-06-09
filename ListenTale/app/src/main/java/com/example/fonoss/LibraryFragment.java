@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -171,23 +170,16 @@ public class LibraryFragment extends Fragment {
 
         AlertDialog dialog = new AlertDialog.Builder(requireContext())
                 .setView(dialogView)
-                .setPositiveButton("Remove", (d, which) -> deleteSelectedBooks())
-                .setNegativeButton("Cancel", null)
                 .create();
         dialog.setOnShowListener(d -> {
             if (dialog.getWindow() != null) {
                 dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
             }
-            Button positive = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            Button negative = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
-            if (positive != null) {
-                positive.setTextColor(ContextCompat.getColor(requireContext(), R.color.red_600));
-                positive.setTextSize(14);
-            }
-            if (negative != null) {
-                negative.setTextColor(ContextCompat.getColor(requireContext(), R.color.slate_500));
-                negative.setTextSize(14);
-            }
+        });
+        dialogView.findViewById(R.id.button_cancel).setOnClickListener(v -> dialog.dismiss());
+        dialogView.findViewById(R.id.button_remove).setOnClickListener(v -> {
+            deleteSelectedBooks();
+            dialog.dismiss();
         });
         dialog.show();
     }
