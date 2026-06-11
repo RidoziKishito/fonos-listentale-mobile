@@ -151,6 +151,9 @@
         <action
             android:id="@+id/action_bookDetailFragment_to_ebookReaderFragment"
             app:destination="@id/ebookReaderFragment" />
+        <action
+            android:id="@+id/action_bookDetailFragment_to_bookDetailFragment"
+            app:destination="@id/bookDetailFragment" />
     </fragment>
 
     <fragment

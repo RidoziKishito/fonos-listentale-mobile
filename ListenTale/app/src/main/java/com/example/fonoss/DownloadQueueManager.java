@@ -320,6 +320,7 @@ final class DownloadQueueManager {
         bookMap.put("pages", book.getPages());
         bookMap.put("rating", book.getRating());
         bookMap.put("coverUrl", book.getCoverUrl());
+        bookMap.put("series", book.getSeries());
         return bookMap;
     }
 

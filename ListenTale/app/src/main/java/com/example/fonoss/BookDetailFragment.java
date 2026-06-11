@@ -18,7 +18,13 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class BookDetailFragment extends Fragment {
@@ -28,6 +34,9 @@ public class BookDetailFragment extends Fragment {
     private ImageButton buttonFavorite, buttonDownload;
     private View buttonListen, buttonRead;
     private ProgressBar progressDownload;
+    private View relatedBooksSection;
+    private final List<Book> relatedBooks = new ArrayList<>();
+    private BookAdapter relatedBooksAdapter;
 
     @Nullable
     @Override
@@ -45,6 +54,8 @@ public class BookDetailFragment extends Fragment {
         buttonListen = view.findViewById(R.id.button_listen);
         buttonRead = view.findViewById(R.id.button_read);
         progressDownload = view.findViewById(R.id.progress_download);
+        relatedBooksSection = view.findViewById(R.id.section_related_books);
+        setupRelatedBooks(view);
 
         if (getArguments() != null) {
             currentBook = (Book) getArguments().getSerializable("book");
@@ -55,6 +66,7 @@ public class BookDetailFragment extends Fragment {
                     Book localBook = libraryViewModel.loadBookLocally(currentBook.getId());
                     if (localBook != null) currentBook.setChapters(localBook.getChapters());
                 }
+                fetchRelatedBooks();
             }
         }
 
@@ -101,6 +113,62 @@ public class BookDetailFragment extends Fragment {
         });
 
         checkOfflineAvailability();
+    }
+
+    private void setupRelatedBooks(View view) {
+        RecyclerView recyclerRelatedBooks = view.findViewById(R.id.recycler_related_books);
+        recyclerRelatedBooks.setLayoutManager(
+                new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
+        relatedBooksAdapter = new BookAdapter(relatedBooks, book -> {
+            Bundle bundle = new Bundle();
+            bundle.putSerializable("book", book);
+            Navigation.findNavController(view).navigate(
+                    R.id.action_bookDetailFragment_to_bookDetailFragment, bundle);
+        });
+        recyclerRelatedBooks.setAdapter(relatedBooksAdapter);
+    }
+
+    private void fetchRelatedBooks() {
+        if (currentBook == null) return;
+
+        FirebaseFirestore.getInstance().collection("books").get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!isAdded()) return;
+
+                    String currentSeries = normalizeSeries(currentBook.getSeries());
+                    String currentTitle = normalizeSeries(currentBook.getTitle());
+                    relatedBooks.clear();
+
+                    for (QueryDocumentSnapshot document : querySnapshot) {
+                        Book book = document.toObject(Book.class);
+                        if (book == null) continue;
+                        book.setId(document.getId());
+
+                        if (currentBook.getId() != null
+                                && currentBook.getId().equals(book.getId())) {
+                            continue;
+                        }
+
+                        String candidateSeries = normalizeSeries(book.getSeries());
+                        boolean sameSeries = !currentSeries.isEmpty()
+                                && currentSeries.equals(candidateSeries);
+                        boolean titleMatchesSeries = currentSeries.isEmpty()
+                                && !candidateSeries.isEmpty()
+                                && currentTitle.contains(candidateSeries);
+
+                        if (sameSeries || titleMatchesSeries) {
+                            relatedBooks.add(book);
+                        }
+                    }
+
+                    relatedBooksAdapter.notifyDataSetChanged();
+                    relatedBooksSection.setVisibility(
+                            relatedBooks.isEmpty() ? View.GONE : View.VISIBLE);
+                });
+    }
+
+    private String normalizeSeries(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 
     private boolean isAvailable() {

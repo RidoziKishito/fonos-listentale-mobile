@@ -122,12 +122,14 @@ public class LibraryViewModel extends ViewModel {
                 String genre = (String) map.get("genre");
                 if (genre == null) genre = (String) map.get("gender");
 
-                books.add(new Book(
+                Book book = new Book(
                         (String) map.get("id"), (String) map.get("title"), (String) map.get("author"),
                         genre, (String) map.get("description"), (String) map.get("duration"),
                         (String) map.get("pages"), dRating, (String) map.get("coverUrl"),
                         (List<String>) map.get("chapters")
-                ));
+                );
+                book.setSeries((String) map.get("series"));
+                books.add(book);
             }
         }
         if ("downloaded".equals(key) && !pendingDeletedDownloadIds.isEmpty()) {
@@ -353,6 +355,7 @@ public class LibraryViewModel extends ViewModel {
             bookMap.put("description", book.getDescription()); bookMap.put("duration", book.getDuration());
             bookMap.put("pages", book.getPages()); bookMap.put("rating", book.getRating());
             bookMap.put("coverUrl", book.getCoverUrl());
+            bookMap.put("series", book.getSeries());
             db.collection("users").document(user.getUid()).update(collection, FieldValue.arrayUnion(bookMap));
         } else {
             removeFromCollectionManual(collection, book.getId());

@@ -14,6 +14,7 @@ public class Book implements Serializable {
     private String pages;
     private double rating;
     private String coverUrl;
+    private String series;
     private transient List<String> chapters;
     private String audio_link;
 
@@ -44,6 +45,7 @@ public class Book implements Serializable {
     public String getPages() { return pages; }
     public double getRating() { return rating; }
     public String getCoverUrl() { return coverUrl; }
+    public String getSeries() { return series; }
     public List<String> getChapters() { return chapters; }
 
     // Setters
@@ -60,8 +62,29 @@ public class Book implements Serializable {
     public void setPages(String pages) { this.pages = pages; }
     public void setRating(double rating) { this.rating = rating; }
     public void setCoverUrl(String coverUrl) { this.coverUrl = coverUrl; }
+
+    @com.google.firebase.firestore.PropertyName("cover_url")
+    public void setLegacyCoverUrl(String coverUrl) { setCoverUrlIfMissing(coverUrl); }
+
+    @com.google.firebase.firestore.PropertyName("imageUrl")
+    public void setLegacyImageUrl(String imageUrl) { setCoverUrlIfMissing(imageUrl); }
+
+    @com.google.firebase.firestore.PropertyName("image_url")
+    public void setLegacyImageUrlSnakeCase(String imageUrl) { setCoverUrlIfMissing(imageUrl); }
+
+    @com.google.firebase.firestore.PropertyName("cover")
+    public void setLegacyCover(String coverUrl) { setCoverUrlIfMissing(coverUrl); }
+
+    public void setSeries(String series) { this.series = series; }
     public void setChapters(List<String> chapters) { this.chapters = chapters; }
 
     public String getAudio_link() { return audio_link; }
     public void setAudio_link(String audio_link) { this.audio_link = audio_link; }
+
+    private void setCoverUrlIfMissing(String value) {
+        if ((coverUrl == null || coverUrl.trim().isEmpty())
+                && value != null && !value.trim().isEmpty()) {
+            coverUrl = value.trim();
+        }
+    }
 }
