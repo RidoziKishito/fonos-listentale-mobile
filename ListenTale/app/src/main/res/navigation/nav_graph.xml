@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/welcomeFragment"
-        android:name="com.example.fonoss.WelcomeFragment"
+        android:name="com.example.fonoss.ui.home.WelcomeFragment"
         android:label="Welcome"
         tools:layout="@layout/fragment_welcome">
         <action
@@ -20,7 +20,7 @@
 
     <fragment
         android:id="@+id/loginFragment"
-        android:name="com.example.fonoss.LoginFragment"
+        android:name="com.example.fonoss.ui.auth.LoginFragment"
         android:label="Login"
         tools:layout="@layout/fragment_login">
         <action
@@ -35,7 +35,7 @@
 
     <fragment
         android:id="@+id/registerFragment"
-        android:name="com.example.fonoss.RegisterFragment"
+        android:name="com.example.fonoss.ui.auth.RegisterFragment"
         android:label="Register"
         tools:layout="@layout/fragment_register">
         <action
@@ -50,7 +50,7 @@
 
     <fragment
         android:id="@+id/booksFragment"
-        android:name="com.example.fonoss.BooksFragment"
+        android:name="com.example.fonoss.ui.home.BooksFragment"
         android:label="Books"
         tools:layout="@layout/fragment_books">
         <action
@@ -69,7 +69,7 @@
 
     <fragment
         android:id="@+id/seeAllFragment"
-        android:name="com.example.fonoss.SeeAllFragment"
+        android:name="com.example.fonoss.ui.home.SeeAllFragment"
         android:label="See All"
         tools:layout="@layout/fragment_see_all">
         <action
@@ -85,7 +85,7 @@
 
     <fragment
         android:id="@+id/searchFragment"
-        android:name="com.example.fonoss.SearchFragment"
+        android:name="com.example.fonoss.ui.search.SearchFragment"
         android:label="Search"
         tools:layout="@layout/fragment_search">
         <action
@@ -101,7 +101,7 @@
 
     <fragment
         android:id="@+id/libraryFragment"
-        android:name="com.example.fonoss.LibraryFragment"
+        android:name="com.example.fonoss.ui.library.LibraryFragment"
         android:label="Library"
         tools:layout="@layout/fragment_library">
         <action
@@ -117,7 +117,7 @@
 
     <fragment
         android:id="@+id/profileFragment"
-        android:name="com.example.fonoss.ProfileFragment"
+        android:name="com.example.fonoss.ui.auth.ProfileFragment"
         android:label="Profile"
         tools:layout="@layout/fragment_profile">
         <action
@@ -130,19 +130,19 @@
 
     <fragment
         android:id="@+id/accountInfoFragment"
-        android:name="com.example.fonoss.AccountInfoFragment"
+        android:name="com.example.fonoss.ui.auth.AccountInfoFragment"
         android:label="Account Info"
         tools:layout="@layout/fragment_account_info" />
 
     <fragment
         android:id="@+id/settingsFragment"
-        android:name="com.example.fonoss.SettingsFragment"
+        android:name="com.example.fonoss.ui.settings.SettingsFragment"
         android:label="Settings"
         tools:layout="@layout/fragment_settings" />
 
     <fragment
         android:id="@+id/bookDetailFragment"
-        android:name="com.example.fonoss.BookDetailFragment"
+        android:name="com.example.fonoss.ui.book.BookDetailFragment"
         android:label="Book Detail"
         tools:layout="@layout/fragment_book_detail">
         <action
@@ -158,14 +158,15 @@
 
     <fragment
         android:id="@+id/ebookReaderFragment"
-        android:name="com.example.fonoss.EbookReaderFragment"
+        android:name="com.example.fonoss.ui.player.EbookReaderFragment"
         android:label="Ebook Reader"
         tools:layout="@layout/fragment_ebook_reader" />
 
     <fragment
         android:id="@+id/audioPlayerFragment"
-        android:name="com.example.fonoss.AudioPlayerFragment"
+        android:name="com.example.fonoss.ui.player.AudioPlayerFragment"
         android:label="Audio Player"
         tools:layout="@layout/fragment_audio_player" />
 
 </navigation>
+
