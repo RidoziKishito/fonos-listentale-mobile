@@ -40,4 +40,10 @@ public class UserRepository {
         data.put("name", newName);
         return db.collection("users").document(uid).update(data);
     }
+
+    public Task<Void> updateUserAvatar(String uid, String avatarBase64) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("avatarUrl", avatarBase64);
+        return db.collection("users").document(uid).update(data);
+    }
 }

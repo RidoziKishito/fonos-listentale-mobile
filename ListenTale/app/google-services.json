@@ -12,7 +12,20 @@
           "package_name": "com.example.fonoss"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "684065090542-cj50ii86vud0sqc73va0399p5sogemj4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.fonoss",
+            "certificate_hash": "660fa4946986871102f4adfd87ceb5c5756eac8f"
+          }
+        },
+        {
+          "client_id": "684065090542-g149kfpf5i6goqaf0v0okdc6kmtqh42p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBq0T0CZwPT9ym8k70f9HSyQh8f_v3aRaI"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "684065090542-g149kfpf5i6goqaf0v0okdc6kmtqh42p.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
