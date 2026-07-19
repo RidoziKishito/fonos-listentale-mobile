@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true"
+    android:background="@android:color/black">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#212121"
+        app:titleTextColor="@android:color/white"
+        app:title="Crop Image"
+        app:navigationIcon="@android:drawable/ic_menu_revert">
+        
+        <TextView
+            android:id="@+id/btn_crop"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="CROP"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:padding="16dp"
+            android:layout_gravity="end"/>
+    </androidx.appcompat.widget.Toolbar>
+
+    <com.canhub.cropper.CropImageView
+        android:id="@+id/cropImageView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        app:cropShape="oval"
+        app:cropFixAspectRatio="true"/>
+
+</LinearLayout>

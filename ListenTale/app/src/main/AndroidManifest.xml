@@ -36,6 +36,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Thêm Activity tùy chỉnh để hiển thị thanh menu Cắt/Hủy cho thư viện cắt ảnh -->
+        <activity
+            android:name=".ui.auth.CustomCropActivity"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
     </application>
 
 </manifest>

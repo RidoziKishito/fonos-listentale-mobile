@@ -33,6 +33,12 @@ import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import android.app.Activity;
+import android.content.Intent;
+
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 @AndroidEntryPoint
@@ -40,10 +46,13 @@ public class ProfileFragment extends Fragment {
 
     private UserViewModel userViewModel;
     private ImageView avatarImageView;
+    private BottomSheetDialog bottomSheetDialog;
+    private int lastImageSource = 0; // 1: Gallery, 2: Camera
 
     private ActivityResultLauncher<String> requestCameraPermissionLauncher;
     private ActivityResultLauncher<Void> takePictureLauncher;
     private ActivityResultLauncher<androidx.activity.result.PickVisualMediaRequest> pickMediaLauncher;
+    private ActivityResultLauncher<Intent> customCropLauncher;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -64,7 +73,17 @@ public class ProfileFragment extends Fragment {
                 new ActivityResultContracts.TakePicturePreview(),
                 bitmap -> {
                     if (bitmap != null) {
-                        userViewModel.uploadAvatar(bitmap);
+                        try {
+                            // Save bitmap to temp file to get URI for cropper
+                            File tempFile = File.createTempFile("temp_avatar", ".jpg", requireContext().getCacheDir());
+                            FileOutputStream out = new FileOutputStream(tempFile);
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+                            out.flush();
+                            out.close();
+                            launchCropper(Uri.fromFile(tempFile));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
         );
@@ -73,15 +92,41 @@ public class ProfileFragment extends Fragment {
                 new ActivityResultContracts.PickVisualMedia(),
                 uri -> {
                     if (uri != null) {
-                        try {
-                            Bitmap bitmap = MediaStore.Images.Media.getBitmap(requireActivity().getContentResolver(), uri);
-                            userViewModel.uploadAvatar(bitmap);
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                        launchCropper(uri);
+                    }
+                }
+        );
+
+        customCropLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        Uri croppedUri = result.getData().getParcelableExtra(CustomCropActivity.EXTRA_CROPPED_URI);
+                        if (croppedUri != null) {
+                            try {
+                                Bitmap bitmap = MediaStore.Images.Media.getBitmap(requireActivity().getContentResolver(), croppedUri);
+                                userViewModel.uploadAvatar(bitmap);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    } else if (result.getResultCode() == CustomCropActivity.RESULT_RETAKE) {
+                        if (lastImageSource == 1) {
+                            pickMediaLauncher.launch(new androidx.activity.result.PickVisualMediaRequest.Builder()
+                                    .setMediaType(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
+                                    .build());
+                        } else if (lastImageSource == 2) {
+                            takePictureLauncher.launch(null);
                         }
                     }
                 }
         );
+    }
+
+    private void launchCropper(Uri uri) {
+        Intent intent = new Intent(requireContext(), CustomCropActivity.class);
+        intent.putExtra(CustomCropActivity.EXTRA_URI, uri);
+        customCropLauncher.launch(intent);
     }
 
     @Nullable
@@ -121,7 +166,7 @@ public class ProfileFragment extends Fragment {
         });
 
         View editIcon = view.findViewById(R.id.icon_edit_avatar);
-        View.OnClickListener avatarClickListener = v -> showAvatarOptionsDialog();
+        View.OnClickListener avatarClickListener = v -> showAvatarBottomSheet();
         avatarImageView.setOnClickListener(avatarClickListener);
         editIcon.setOnClickListener(avatarClickListener);
 
@@ -145,25 +190,42 @@ public class ProfileFragment extends Fragment {
         });
     }
 
-    private void showAvatarOptionsDialog() {
-        String[] options = {"Choose from Gallery", "Take a Photo", "Remove Profile Picture"};
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Update Profile Picture")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        pickMediaLauncher.launch(new androidx.activity.result.PickVisualMediaRequest.Builder()
-                                .setMediaType(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
-                                .build());
-                    } else if (which == 1) {
-                        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                            takePictureLauncher.launch(null);
-                        } else {
-                            requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA);
-                        }
-                    } else if (which == 2) {
-                        userViewModel.removeAvatar();
-                    }
-                })
-                .show();
+    private void showAvatarBottomSheet() {
+        if (bottomSheetDialog == null) {
+            bottomSheetDialog = new BottomSheetDialog(requireContext(), com.google.android.material.R.style.Theme_Design_Light_BottomSheetDialog);
+            View bottomSheetView = getLayoutInflater().inflate(R.layout.dialog_avatar_options, null);
+            bottomSheetDialog.setContentView(bottomSheetView);
+
+            bottomSheetDialog.setOnShowListener(dialogInterface -> {
+                View bottomSheet = bottomSheetDialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+                if (bottomSheet != null) {
+                    bottomSheet.setBackgroundResource(android.R.color.transparent);
+                }
+            });
+
+            bottomSheetView.findViewById(R.id.option_gallery).setOnClickListener(v -> {
+                bottomSheetDialog.dismiss();
+                lastImageSource = 1;
+                pickMediaLauncher.launch(new androidx.activity.result.PickVisualMediaRequest.Builder()
+                        .setMediaType(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
+                        .build());
+            });
+
+            bottomSheetView.findViewById(R.id.option_camera).setOnClickListener(v -> {
+                bottomSheetDialog.dismiss();
+                lastImageSource = 2;
+                if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                    takePictureLauncher.launch(null);
+                } else {
+                    requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+                }
+            });
+
+            bottomSheetView.findViewById(R.id.option_remove).setOnClickListener(v -> {
+                bottomSheetDialog.dismiss();
+                userViewModel.removeAvatar();
+            });
+        }
+        bottomSheetDialog.show();
     }
 }

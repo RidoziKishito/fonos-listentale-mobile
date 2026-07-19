@@ -52,6 +52,7 @@ dependencies {
     implementation(libs.navigation.ui.ktx)
     implementation(libs.androidx.media)
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation("com.vanniktech:android-image-cropper:4.6.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)

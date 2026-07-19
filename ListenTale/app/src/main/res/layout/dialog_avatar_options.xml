@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/bottom_sheet_bg">
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/drag_handle" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Update Profile Picture"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:paddingBottom="16dp"
+        android:textColor="#212121" />
+
+    <LinearLayout
+        android:id="@+id/option_gallery"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingVertical="12dp"
+        android:gravity="center_vertical"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/ic_menu_gallery"
+            android:contentDescription="Gallery"
+            app:tint="#212121"
+            xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Choose from Gallery"
+            android:textSize="16sp"
+            android:layout_marginStart="16dp"
+            android:textColor="#212121" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/option_camera"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingVertical="12dp"
+        android:gravity="center_vertical"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/ic_menu_camera"
+            android:contentDescription="Camera"
+            app:tint="#212121"
+            xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Take a Photo"
+            android:textSize="16sp"
+            android:layout_marginStart="16dp"
+            android:textColor="#212121" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/option_remove"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingVertical="12dp"
+        android:gravity="center_vertical"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/ic_menu_delete"
+            android:contentDescription="Remove"
+            app:tint="@android:color/holo_red_dark"
+            xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Remove Profile Picture"
+            android:textSize="16sp"
+            android:layout_marginStart="16dp"
+            android:textColor="@android:color/holo_red_dark" />
+    </LinearLayout>
+
+</LinearLayout>
