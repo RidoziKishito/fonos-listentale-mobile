@@ -73,13 +73,29 @@
             android:orientation="vertical"
             android:padding="24dp">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-bold"
-                android:text="Top Categories"
-                android:textColor="@color/slate_900"
-                android:textSize="22sp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="Top Categories"
+                    android:textColor="@color/slate_900"
+                    android:textSize="22sp" />
+                
+                <ImageButton
+                    android:id="@+id/btn_filter_genres"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_sort_by_size"
+                    app:tint="@color/slate_700"/>
+            </LinearLayout>
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chip_group_categories"

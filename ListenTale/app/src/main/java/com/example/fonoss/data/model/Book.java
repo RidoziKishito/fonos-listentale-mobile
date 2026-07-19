@@ -9,6 +9,7 @@ public class Book implements Serializable {
     private String title;
     private String author;
     private String genre;
+    private List<String> genres;
     private String description;
     private String duration;
     private String pages;
@@ -20,13 +21,15 @@ public class Book implements Serializable {
 
     public Book() {
         this.chapters = new ArrayList<>();
+        this.genres = new ArrayList<>();
     }
 
-    public Book(String id, String title, String author, String genre, String description, String duration, String pages, double rating, String coverUrl, List<String> chapters) {
+    public Book(String id, String title, String author, String genre, List<String> genres, String description, String duration, String pages, double rating, String coverUrl, List<String> chapters) {
         this.id = id;
         this.title = title;
         this.author = author;
         this.genre = genre;
+        this.genres = genres != null ? genres : new ArrayList<>();
         this.description = description;
         this.duration = duration;
         this.pages = pages;
@@ -40,6 +43,7 @@ public class Book implements Serializable {
     public String getTitle() { return title; }
     public String getAuthor() { return author; }
     public String getGenre() { return genre; }
+    public List<String> getGenres() { return genres; }
     public String getDescription() { return description; }
     public String getDuration() { return duration; }
     public String getPages() { return pages; }
@@ -53,6 +57,7 @@ public class Book implements Serializable {
     public void setTitle(String title) { this.title = title; }
     public void setAuthor(String author) { this.author = author; }
     public void setGenre(String genre) { this.genre = genre; }
+    public void setGenres(List<String> genres) { this.genres = genres; }
     
     @com.google.firebase.firestore.PropertyName("gender")
     public void setGender(String gender) { this.genre = gender; }

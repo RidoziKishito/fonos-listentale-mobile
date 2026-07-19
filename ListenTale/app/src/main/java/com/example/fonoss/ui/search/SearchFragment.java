@@ -28,9 +28,12 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import android.widget.ImageButton;
+import androidx.appcompat.app.AlertDialog;
 
 @AndroidEntryPoint
 public class SearchFragment extends Fragment {
@@ -42,6 +45,7 @@ public class SearchFragment extends Fragment {
     private TextView recentLabel;
     private FirebaseFirestore db;
     private Set<String> selectedCategories = new HashSet<>();
+    private List<String> allAvailableGenres = new ArrayList<>();
 
     @Nullable
     @Override
@@ -100,6 +104,11 @@ public class SearchFragment extends Fragment {
         });
 
         setupCategoryChips(view, inputSearch);
+        
+        ImageButton btnFilter = view.findViewById(R.id.btn_filter_genres);
+        if (btnFilter != null) {
+            btnFilter.setOnClickListener(v -> showFilterDialog(inputSearch));
+        }
     }
 
     private void setupCategoryChips(View view, TextInputEditText inputSearch) {
@@ -129,7 +138,22 @@ public class SearchFragment extends Fragment {
             
             boolean matchesCategories = true;
             for (String cat : selectedCategories) {
-                if (book.getGenre() == null || !book.getGenre().toLowerCase().contains(cat.toLowerCase())) {
+                boolean hasThisGenre = false;
+                if (book.getGenres() != null) {
+                    for (String g : book.getGenres()) {
+                        if (g.toLowerCase().contains(cat.toLowerCase())) {
+                            hasThisGenre = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // Fallback to legacy genre string if array is empty
+                if (!hasThisGenre && book.getGenre() != null && book.getGenre().toLowerCase().contains(cat.toLowerCase())) {
+                    hasThisGenre = true;
+                }
+                
+                if (!hasThisGenre) {
                     matchesCategories = false;
                     break;
                 }
@@ -157,6 +181,18 @@ public class SearchFragment extends Fragment {
                     getActivity().runOnUiThread(() -> {
                         allBooks.clear();
                         allBooks.addAll(tempBooks);
+                        
+                        Set<String> uniqueGenres = new HashSet<>();
+                        for (Book book : allBooks) {
+                            if (book.getGenres() != null) {
+                                uniqueGenres.addAll(book.getGenres());
+                            } else if (book.getGenre() != null) {
+                                uniqueGenres.add(book.getGenre());
+                            }
+                        }
+                        allAvailableGenres.clear();
+                        allAvailableGenres.addAll(uniqueGenres);
+                        Collections.sort(allAvailableGenres);
                         
                         // Re-apply filters
                         View view = getView();
@@ -191,5 +227,53 @@ public class SearchFragment extends Fragment {
     private void hideKeyboard(View v) {
         InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+    }
+    
+    private void showFilterDialog(TextInputEditText inputSearch) {
+        if (allAvailableGenres.isEmpty()) return;
+        
+        String[] genresArray = allAvailableGenres.toArray(new String[0]);
+        boolean[] checkedItems = new boolean[genresArray.length];
+        
+        for (int i = 0; i < genresArray.length; i++) {
+            if (selectedCategories.contains(genresArray[i])) {
+                checkedItems[i] = true;
+            }
+        }
+        
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Filter by Genres")
+                .setMultiChoiceItems(genresArray, checkedItems, (dialog, which, isChecked) -> {
+                    if (isChecked) {
+                        selectedCategories.add(genresArray[which]);
+                    } else {
+                        selectedCategories.remove(genresArray[which]);
+                    }
+                })
+                .setPositiveButton("Apply", (dialog, which) -> {
+                    // Also sync the chips visually if they exist
+                    ChipGroup chipGroup = getView() != null ? getView().findViewById(R.id.chip_group_categories) : null;
+                    if (chipGroup != null) {
+                        for (int i = 0; i < chipGroup.getChildCount(); i++) {
+                            View child = chipGroup.getChildAt(i);
+                            if (child instanceof Chip) {
+                                Chip chip = (Chip) child;
+                                // Need to temporarily disable listener to prevent double triggering
+                                chip.setOnCheckedChangeListener(null);
+                                chip.setChecked(selectedCategories.contains(chip.getText().toString()));
+                                // Re-attach listener
+                                chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                                    String category = chip.getText().toString();
+                                    if (isChecked) selectedCategories.add(category);
+                                    else selectedCategories.remove(category);
+                                    applyFilters(inputSearch.getText().toString());
+                                });
+                            }
+                        }
+                    }
+                    applyFilters(inputSearch.getText().toString());
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 }

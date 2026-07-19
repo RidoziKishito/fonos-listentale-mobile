@@ -142,9 +142,15 @@ public class LibraryViewModel extends ViewModel {
                 String genre = (String) map.get("genre");
                 if (genre == null) genre = (String) map.get("gender");
 
+                List<String> genres = null;
+                Object genresObj = map.get("genres");
+                if (genresObj instanceof List) {
+                    genres = (List<String>) genresObj;
+                }
+
                 Book book = new Book(
                         (String) map.get("id"), (String) map.get("title"), (String) map.get("author"),
-                        genre, (String) map.get("description"), (String) map.get("duration"),
+                        genre, genres, (String) map.get("description"), (String) map.get("duration"),
                         (String) map.get("pages"), dRating, (String) map.get("coverUrl"),
                         (List<String>) map.get("chapters")
                 );
@@ -372,7 +378,9 @@ public class LibraryViewModel extends ViewModel {
         if (add) {
             Map<String, Object> bookMap = new HashMap<>();
             bookMap.put("id", book.getId()); bookMap.put("title", book.getTitle());
-            bookMap.put("author", book.getAuthor()); bookMap.put("genre", book.getGenre());
+            bookMap.put("author", book.getAuthor()); 
+            bookMap.put("genre", book.getGenre());
+            bookMap.put("genres", book.getGenres());
             bookMap.put("description", book.getDescription()); bookMap.put("duration", book.getDuration());
             bookMap.put("pages", book.getPages()); bookMap.put("rating", book.getRating());
             bookMap.put("coverUrl", book.getCoverUrl());
