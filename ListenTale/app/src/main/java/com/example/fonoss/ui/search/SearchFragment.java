@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.CheckBox;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -33,6 +34,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.ScrollView;
 import androidx.appcompat.app.AlertDialog;
 
 @AndroidEntryPoint
@@ -46,6 +51,17 @@ public class SearchFragment extends Fragment {
     private FirebaseFirestore db;
     private Set<String> selectedCategories = new HashSet<>();
     private List<String> allAvailableGenres = new ArrayList<>();
+    private int selectedDurationFilter = DURATION_ANY;
+    private double selectedMinRating = 0.0;
+    private static final int DURATION_ANY = 1000;
+    private static final int DURATION_UNDER_1_HOUR = 1001;
+    private static final int DURATION_1_TO_3_HOURS = 1002;
+    private static final int DURATION_3_TO_6_HOURS = 1003;
+    private static final int DURATION_OVER_6_HOURS = 1004;
+    private static final int RATING_ANY = 2000;
+    private static final int RATING_3_PLUS = 2001;
+    private static final int RATING_4_PLUS = 2002;
+    private static final int RATING_4_5_PLUS = 2003;
 
     @Nullable
     @Override
@@ -159,11 +175,18 @@ public class SearchFragment extends Fragment {
                 }
             }
 
-            if (matchesSearch && matchesCategories && (!searchText.isEmpty() || !selectedCategories.isEmpty())) {
+            boolean matchesDuration = matchesDurationFilter(book);
+            boolean matchesRating = book.getRating() >= selectedMinRating;
+            boolean hasActiveFilters = !searchText.isEmpty()
+                    || !selectedCategories.isEmpty()
+                    || selectedDurationFilter != DURATION_ANY
+                    || selectedMinRating > 0.0;
+
+            if (matchesSearch && matchesCategories && matchesDuration && matchesRating && hasActiveFilters) {
                 filteredBooks.add(book);
             }
         }
-        showResults(searchText.isEmpty() && selectedCategories.isEmpty());
+        showResults(!hasAnyActiveFilter(searchText));
     }
 
     private void fetchAllBooks() {
@@ -235,27 +258,64 @@ public class SearchFragment extends Fragment {
     }
     
     private void showFilterDialog(TextInputEditText inputSearch) {
-        if (allAvailableGenres.isEmpty()) return;
-        
-        String[] genresArray = allAvailableGenres.toArray(new String[0]);
-        boolean[] checkedItems = new boolean[genresArray.length];
-        
-        for (int i = 0; i < genresArray.length; i++) {
-            if (selectedCategories.contains(genresArray[i])) {
-                checkedItems[i] = true;
-            }
+        LinearLayout content = new LinearLayout(requireContext());
+        content.setOrientation(LinearLayout.VERTICAL);
+        int padding = (int) (20 * getResources().getDisplayMetrics().density);
+        content.setPadding(padding, padding / 2, padding, 0);
+
+        TextView genreTitle = createFilterTitle("Genres");
+        content.addView(genreTitle);
+
+        List<CheckBox> genreChecks = new ArrayList<>();
+        for (String genre : allAvailableGenres) {
+            CheckBox checkBox = new CheckBox(requireContext());
+            checkBox.setText(genre);
+            checkBox.setChecked(selectedCategories.contains(genre));
+            genreChecks.add(checkBox);
+            content.addView(checkBox);
         }
-        
+
+        TextView durationTitle = createFilterTitle("Listening duration");
+        content.addView(durationTitle);
+
+        RadioGroup durationGroup = new RadioGroup(requireContext());
+        durationGroup.setOrientation(RadioGroup.VERTICAL);
+        addRadioButton(durationGroup, DURATION_ANY, "Any duration");
+        addRadioButton(durationGroup, DURATION_UNDER_1_HOUR, "Under 1 hour");
+        addRadioButton(durationGroup, DURATION_1_TO_3_HOURS, "1 - 3 hours");
+        addRadioButton(durationGroup, DURATION_3_TO_6_HOURS, "3 - 6 hours");
+        addRadioButton(durationGroup, DURATION_OVER_6_HOURS, "Over 6 hours");
+        durationGroup.check(selectedDurationFilter);
+        content.addView(durationGroup);
+
+        TextView ratingTitle = createFilterTitle("Minimum rating");
+        content.addView(ratingTitle);
+
+        RadioGroup ratingGroup = new RadioGroup(requireContext());
+        ratingGroup.setOrientation(RadioGroup.VERTICAL);
+        addRadioButton(ratingGroup, RATING_ANY, "Any rating");
+        addRadioButton(ratingGroup, RATING_3_PLUS, "3.0+");
+        addRadioButton(ratingGroup, RATING_4_PLUS, "4.0+");
+        addRadioButton(ratingGroup, RATING_4_5_PLUS, "4.5+");
+        ratingGroup.check(getRatingFilterId(selectedMinRating));
+        content.addView(ratingGroup);
+
+        ScrollView scrollView = new ScrollView(requireContext());
+        scrollView.addView(content);
+
         new AlertDialog.Builder(requireContext())
-                .setTitle("Filter by Genres")
-                .setMultiChoiceItems(genresArray, checkedItems, (dialog, which, isChecked) -> {
-                    if (isChecked) {
-                        selectedCategories.add(genresArray[which]);
-                    } else {
-                        selectedCategories.remove(genresArray[which]);
-                    }
-                })
+                .setTitle("Search filters")
+                .setView(scrollView)
                 .setPositiveButton("Apply", (dialog, which) -> {
+                    selectedCategories.clear();
+                    for (CheckBox checkBox : genreChecks) {
+                        if (checkBox.isChecked()) {
+                            selectedCategories.add(checkBox.getText().toString());
+                        }
+                    }
+                    selectedDurationFilter = durationGroup.getCheckedRadioButtonId();
+                    selectedMinRating = getRatingValue(ratingGroup.getCheckedRadioButtonId());
+
                     // Also sync the chips visually if they exist
                     ChipGroup chipGroup = getView() != null ? getView().findViewById(R.id.chip_group_categories) : null;
                     if (chipGroup != null) {
@@ -278,7 +338,134 @@ public class SearchFragment extends Fragment {
                     }
                     applyFilters(inputSearch.getText().toString());
                 })
+                .setNeutralButton("Clear", (dialog, which) -> {
+                    selectedCategories.clear();
+                    selectedDurationFilter = DURATION_ANY;
+                    selectedMinRating = 0.0;
+                    syncCategoryChips(inputSearch);
+                    applyFilters(inputSearch.getText().toString());
+                })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private TextView createFilterTitle(String text) {
+        TextView title = new TextView(requireContext());
+        title.setText(text);
+        title.setTextColor(getResources().getColor(R.color.slate_900, requireContext().getTheme()));
+        title.setTextSize(16);
+        title.setTypeface(null, android.graphics.Typeface.BOLD);
+        title.setPadding(0, 16, 0, 4);
+        return title;
+    }
+
+    private void addRadioButton(RadioGroup group, int id, String text) {
+        RadioButton radioButton = new RadioButton(requireContext());
+        radioButton.setId(id);
+        radioButton.setText(text);
+        group.addView(radioButton);
+    }
+
+    private int getRatingFilterId(double minRating) {
+        if (minRating >= 4.5) return RATING_4_5_PLUS;
+        if (minRating >= 4.0) return RATING_4_PLUS;
+        if (minRating >= 3.0) return RATING_3_PLUS;
+        return RATING_ANY;
+    }
+
+    private double getRatingValue(int ratingFilterId) {
+        switch (ratingFilterId) {
+            case RATING_3_PLUS:
+                return 3.0;
+            case RATING_4_PLUS:
+                return 4.0;
+            case RATING_4_5_PLUS:
+                return 4.5;
+            default:
+                return 0.0;
+        }
+    }
+
+    private boolean hasAnyActiveFilter(String searchText) {
+        return !searchText.isEmpty()
+                || !selectedCategories.isEmpty()
+                || selectedDurationFilter != DURATION_ANY
+                || selectedMinRating > 0.0;
+    }
+
+    private boolean matchesDurationFilter(Book book) {
+        if (selectedDurationFilter == DURATION_ANY) return true;
+
+        double durationHours = parseDurationHours(book.getDuration());
+        if (durationHours < 0) return false;
+
+        switch (selectedDurationFilter) {
+            case DURATION_UNDER_1_HOUR:
+                return durationHours < 1.0;
+            case DURATION_1_TO_3_HOURS:
+                return durationHours >= 1.0 && durationHours <= 3.0;
+            case DURATION_3_TO_6_HOURS:
+                return durationHours > 3.0 && durationHours <= 6.0;
+            case DURATION_OVER_6_HOURS:
+                return durationHours > 6.0;
+            default:
+                return true;
+        }
+    }
+
+    private double parseDurationHours(String duration) {
+        if (duration == null) return -1;
+
+        String value = duration.trim().toLowerCase();
+        if (value.isEmpty()) return -1;
+
+        double hours = 0;
+        double minutes = 0;
+        java.util.regex.Matcher hourMatcher = java.util.regex.Pattern
+                .compile("(\\d+(?:\\.\\d+)?)\\s*(h|hr|hrs|hour|hours)")
+                .matcher(value);
+        if (hourMatcher.find()) {
+            hours = Double.parseDouble(hourMatcher.group(1));
+        }
+
+        java.util.regex.Matcher minuteMatcher = java.util.regex.Pattern
+                .compile("(\\d+(?:\\.\\d+)?)\\s*(m|min|mins|minute|minutes)")
+                .matcher(value);
+        if (minuteMatcher.find()) {
+            minutes = Double.parseDouble(minuteMatcher.group(1));
+        }
+
+        if (hours == 0 && minutes == 0) {
+            java.util.regex.Matcher colonMatcher = java.util.regex.Pattern
+                    .compile("^(\\d+):(\\d{1,2})$")
+                    .matcher(value);
+            if (colonMatcher.find()) {
+                hours = Double.parseDouble(colonMatcher.group(1));
+                minutes = Double.parseDouble(colonMatcher.group(2));
+            }
+        }
+
+        if (hours == 0 && minutes == 0) return -1;
+        return hours + (minutes / 60.0);
+    }
+
+    private void syncCategoryChips(TextInputEditText inputSearch) {
+        ChipGroup chipGroup = getView() != null ? getView().findViewById(R.id.chip_group_categories) : null;
+        if (chipGroup == null) return;
+
+        for (int i = 0; i < chipGroup.getChildCount(); i++) {
+            View child = chipGroup.getChildAt(i);
+            if (child instanceof Chip) {
+                Chip chip = (Chip) child;
+                chip.setOnCheckedChangeListener(null);
+                chip.setChecked(selectedCategories.contains(chip.getText().toString()));
+                chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    String category = chip.getText().toString();
+                    if (isChecked) selectedCategories.add(category);
+                    else selectedCategories.remove(category);
+                    applyFilters(inputSearch.getText().toString());
+                });
+            }
+        }
     }
 }
