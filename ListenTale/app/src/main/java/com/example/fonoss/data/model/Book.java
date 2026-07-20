@@ -2,6 +2,7 @@ package com.example.fonoss.data.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class Book implements Serializable {
@@ -18,6 +19,8 @@ public class Book implements Serializable {
     private String series;
     private transient List<String> chapters;
     private String audio_link;
+    private long views;
+    private long publishDate;
 
     public Book() {
         this.chapters = new ArrayList<>();
@@ -86,10 +89,41 @@ public class Book implements Serializable {
     public String getAudio_link() { return audio_link; }
     public void setAudio_link(String audio_link) { this.audio_link = audio_link; }
 
+    public long getViews() { return views; }
+    public void setViews(long views) { this.views = views; }
+
+    public long getPublishDate() { return publishDate; }
+    public void setPublishDate(long publishDate) { this.publishDate = publishDate; }
+
+    @com.google.firebase.firestore.PropertyName("view_count")
+    public void setViewCount(long views) { this.views = views; }
+
+    @com.google.firebase.firestore.PropertyName("viewCount")
+    public void setViewCountCamelCase(long views) { this.views = views; }
+
+    @com.google.firebase.firestore.PropertyName("publish_date")
+    public void setPublishDateSnakeCase(Object publishDate) { setPublishDateValue(publishDate); }
+
+    @com.google.firebase.firestore.PropertyName("createdAt")
+    public void setCreatedAt(Object createdAt) { setPublishDateValue(createdAt); }
+
+    @com.google.firebase.firestore.PropertyName("created_at")
+    public void setCreatedAtSnakeCase(Object createdAt) { setPublishDateValue(createdAt); }
+
     private void setCoverUrlIfMissing(String value) {
         if ((coverUrl == null || coverUrl.trim().isEmpty())
                 && value != null && !value.trim().isEmpty()) {
             coverUrl = value.trim();
+        }
+    }
+
+    private void setPublishDateValue(Object value) {
+        if (value instanceof Number) {
+            publishDate = ((Number) value).longValue();
+        } else if (value instanceof com.google.firebase.Timestamp) {
+            publishDate = ((com.google.firebase.Timestamp) value).toDate().getTime();
+        } else if (value instanceof Date) {
+            publishDate = ((Date) value).getTime();
         }
     }
 }
