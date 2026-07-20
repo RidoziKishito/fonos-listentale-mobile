@@ -233,7 +233,7 @@ public class AudioService extends Service {
         handler.removeCallbacks(progressRunnable);
         updatePlaybackState();
 
-        // Dá»«ng tráº¡ng thÃ¡i foreground nhÆ°ng váº«n giá»¯ thÃ´ng bÃ¡o
+        // Stop while in foreground but keep notification
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(STOP_FOREGROUND_DETACH);
         } else {

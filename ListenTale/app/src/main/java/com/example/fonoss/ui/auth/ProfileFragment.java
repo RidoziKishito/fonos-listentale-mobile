@@ -105,7 +105,20 @@ public class ProfileFragment extends Fragment {
                         if (croppedUri != null) {
                             try {
                                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(requireActivity().getContentResolver(), croppedUri);
-                                userViewModel.uploadAvatar(bitmap);
+                                
+                                com.example.fonoss.utils.ImageModerationHelper modHelper = new com.example.fonoss.utils.ImageModerationHelper(requireContext());
+                                boolean isAppropriate = modHelper.isImageAppropriate(bitmap);
+                                modHelper.close();
+
+                                if (!isAppropriate) {
+                                    new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                                            .setTitle("Content Warning")
+                                            .setMessage("The image you uploaded contains inappropriate content (NSFW) or violates community standards.\n\nPlease select another image for your avatar.")
+                                            .setPositiveButton("Got it", null)
+                                            .show();
+                                } else {
+                                    userViewModel.uploadAvatar(bitmap);
+                                }
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }

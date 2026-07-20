@@ -77,6 +77,11 @@ public class AccountInfoFragment extends Fragment {
             return;
         }
 
+        if (!com.example.fonoss.utils.TextModerationHelper.isTextAppropriate(requireContext(), newName)) {
+            UiNotifier.warning(getContext(), "Inappropriate name (contains restricted words)");
+            return;
+        }
+
         userViewModel.updateUserName(newName);
         
         isEditing = false;
@@ -87,6 +92,3 @@ public class AccountInfoFragment extends Fragment {
         UiNotifier.success(getContext(), "Profile updated");
     }
 }
-
-
-

@@ -35,6 +35,14 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    androidResources {
+        noCompress.add("tflite")
+    }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 }
 
 dependencies {
@@ -58,4 +66,5 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     implementation(libs.hilt.android)
     annotationProcessor(libs.hilt.compiler)
+    implementation("org.tensorflow:tensorflow-lite:2.16.1")
 }

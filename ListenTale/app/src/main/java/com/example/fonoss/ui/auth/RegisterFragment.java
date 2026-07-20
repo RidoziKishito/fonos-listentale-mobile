@@ -213,6 +213,9 @@ public class RegisterFragment extends Fragment {
 
         boolean hasError = false;
         if (nameStr.isEmpty()) { nameLayout.setError("Full name required"); hasError = true; }
+        else if (!com.example.fonoss.utils.TextModerationHelper.isTextAppropriate(requireContext(), nameStr)) {
+            nameLayout.setError("Inappropriate name (contains restricted words)"); hasError = true; 
+        }
         if (emailStr.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(emailStr).matches()) { 
             emailLayout.setError("Invalid email"); hasError = true; 
         }
