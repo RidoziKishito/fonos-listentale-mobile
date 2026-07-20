@@ -149,7 +149,12 @@ public class BookDetailFragment extends Fragment {
                     relatedBooks.clear();
 
                     for (QueryDocumentSnapshot document : querySnapshot) {
-                        Book book = document.toObject(Book.class);
+                        Book book = null;
+                        try {
+                            book = document.toObject(Book.class);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         if (book == null) continue;
                         book.setId(document.getId());
 
@@ -199,16 +204,26 @@ public class BookDetailFragment extends Fragment {
         return capabilities != null && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
     }
 
+
     private void bindBookDetails(View view) {
         if (currentBook == null) return;
         ((TextView)view.findViewById(R.id.text_book_title)).setText(currentBook.getTitle());
         ((TextView)view.findViewById(R.id.text_author)).setText(String.format("by %s", currentBook.getAuthor()));
-        ((TextView)view.findViewById(R.id.text_book_rating)).setText(String.format(Locale.getDefault(), "%.1f", currentBook.getRating()));
+        ((TextView)view.findViewById(R.id.text_book_rating)).setText(String.format(java.util.Locale.getDefault(), "%.1f", currentBook.getRating()));
         ((TextView)view.findViewById(R.id.text_audio_duration)).setText(currentBook.getDuration());
         ((TextView)view.findViewById(R.id.text_ebook_pages)).setText(currentBook.getPages());
-        ((TextView)view.findViewById(R.id.text_book_genre)).setText(currentBook.getGenre());
+        
+        TextView genreText = view.findViewById(R.id.text_book_genre);
+        String combinedGenres = currentBook.getGenre();
+        if (currentBook.getGenres() != null && !currentBook.getGenres().isEmpty()) {
+            combinedGenres = android.text.TextUtils.join(", ", currentBook.getGenres());
+        }
+        genreText.setText(combinedGenres);
+        genreText.setSelected(true);
+        
         ((TextView)view.findViewById(R.id.text_synopsis)).setText(currentBook.getDescription());
-        Glide.with(this).load(currentBook.getCoverUrl()).placeholder(android.R.drawable.ic_menu_gallery).into((ImageView) view.findViewById(R.id.image_cover_bg));
+        
+        com.bumptech.glide.Glide.with(this).load(currentBook.getCoverUrl()).placeholder(android.R.drawable.ic_menu_gallery).into((ImageView) view.findViewById(R.id.image_cover_bg));
         
         updateFavoriteUI();
         updateDownloadUI();
@@ -261,6 +276,8 @@ public class BookDetailFragment extends Fragment {
         }
     }
 }
+
+
 
 
 

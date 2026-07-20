@@ -98,7 +98,12 @@ public class SeeAllFragment extends Fragment {
             if (task.isSuccessful()) {
                 List<Book> tempBooks = new ArrayList<>();
                 for (QueryDocumentSnapshot document : task.getResult()) {
-                    Book book = document.toObject(Book.class);
+                    Book book = null;
+                    try {
+                        book = document.toObject(Book.class);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                     if (book == null) continue;
                     book.setId(document.getId());
                     tempBooks.add(book);

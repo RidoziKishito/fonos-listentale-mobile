@@ -186,7 +186,12 @@ public class DownloadQueueManager {
                 .get());
         if (!doc.exists()) throw new IOException("Book not found");
 
-        Book book = doc.toObject(Book.class);
+        Book book = null;
+        try {
+            book = doc.toObject(Book.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         if (book == null) throw new IOException("Book data invalid");
         book.setId(doc.getId());
 

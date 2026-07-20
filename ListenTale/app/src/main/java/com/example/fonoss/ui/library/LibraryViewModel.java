@@ -94,7 +94,12 @@ public class LibraryViewModel extends ViewModel {
             java.io.File file = mAuth.getApp().getApplicationContext().getFileStreamPath(fileName);
             if (!file.exists()) {
                 db.collection("books").document(book.getId()).get().addOnSuccessListener(doc -> {
-                    Book fullBook = doc.toObject(Book.class);
+                    Book fullBook = null;
+                    try {
+                        fullBook = doc.toObject(Book.class);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                     if (fullBook != null) {
                         fullBook.setId(doc.getId());
                         saveBookToInternalStorage(fullBook);

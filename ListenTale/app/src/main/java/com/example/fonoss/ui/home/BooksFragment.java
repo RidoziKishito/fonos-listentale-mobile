@@ -107,7 +107,13 @@ public class BooksFragment extends Fragment {
                 List<Book> tempTrending = new ArrayList<>();
                 List<Book> tempRecommended = new ArrayList<>();
                 for (QueryDocumentSnapshot document : task.getResult()) {
-                    Book book = document.toObject(Book.class);
+                    Book book = null;
+                    try {
+                        book = document.toObject(Book.class);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        // Ignore malformed books to prevent crash
+                    }
                     if (book == null) continue;
                     book.setId(document.getId());
                     

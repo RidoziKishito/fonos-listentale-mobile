@@ -133,7 +133,12 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
             if (!isAdded()) return;
             if (task.isSuccessful() && task.getResult() != null) {
                 for (QueryDocumentSnapshot document : task.getResult()) {
-                    Book book = document.toObject(Book.class);
+                    Book book = null;
+                    try {
+                        book = document.toObject(Book.class);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                     if (book != null) {
                         book.setId(document.getId());
                         globalCatalogBooksMap.put(book.getId(), book);
@@ -402,5 +407,3 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
         }
     }
 }
-
-

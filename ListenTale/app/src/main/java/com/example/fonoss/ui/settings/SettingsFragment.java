@@ -13,9 +13,11 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -26,6 +28,16 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
+import com.google.android.material.button.MaterialButton;
+import com.google.firebase.auth.AuthCredential;
+import com.google.firebase.auth.EmailAuthProvider;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserInfo;
 
 @AndroidEntryPoint
 public class SettingsFragment extends Fragment {
@@ -57,6 +69,131 @@ public class SettingsFragment extends Fragment {
         setupPushNotifications();
         view.findViewById(R.id.button_clear_data).setOnClickListener(v -> showClearDataWarning());
         view.findViewById(R.id.button_about_app).setOnClickListener(v -> showAboutDialog());
+
+        View changePasswordBtn = view.findViewById(R.id.button_change_password);
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        boolean isPasswordUser = false;
+        if (user != null) {
+            for (UserInfo userInfo : user.getProviderData()) {
+                if ("password".equals(userInfo.getProviderId())) {
+                    isPasswordUser = true;
+                    break;
+                }
+            }
+        }
+        
+        if (isPasswordUser) {
+            changePasswordBtn.setVisibility(View.VISIBLE);
+            changePasswordBtn.setOnClickListener(v -> showChangePasswordDialog(user));
+        } else {
+            changePasswordBtn.setVisibility(View.GONE);
+        }
+    }
+
+    private void showChangePasswordDialog(FirebaseUser user) {
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_change_password, null);
+        dialog.setContentView(dialogView);
+
+        TextInputEditText inputCurrent = dialogView.findViewById(R.id.input_current_password);
+        TextInputEditText inputNew = dialogView.findViewById(R.id.input_new_password);
+        TextInputEditText inputConfirm = dialogView.findViewById(R.id.input_confirm_password);
+        
+        TextInputLayout layoutCurrent = dialogView.findViewById(R.id.input_current_password_layout);
+        TextInputLayout layoutNew = dialogView.findViewById(R.id.input_new_password_layout);
+        TextInputLayout layoutConfirm = dialogView.findViewById(R.id.input_confirm_password_layout);
+
+        MaterialButton buttonCancel = dialogView.findViewById(R.id.button_cancel_change);
+        MaterialButton buttonSave = dialogView.findViewById(R.id.button_save_password);
+        TextView textForgotPassword = dialogView.findViewById(R.id.text_forgot_password);
+
+        textForgotPassword.setOnClickListener(v -> {
+            dialog.dismiss();
+            showForgotPasswordDialog(user.getEmail());
+        });
+
+        buttonCancel.setOnClickListener(v -> dialog.dismiss());
+        buttonSave.setOnClickListener(v -> {
+            String currentPass = inputCurrent.getText().toString().trim();
+            String newPass = inputNew.getText().toString().trim();
+            String confirmPass = inputConfirm.getText().toString().trim();
+
+            boolean valid = true;
+            if (currentPass.isEmpty()) {
+                layoutCurrent.setError("Required");
+                valid = false;
+            } else layoutCurrent.setError(null);
+            
+            if (newPass.length() < 6) {
+                layoutNew.setError("Password must be at least 6 characters");
+                valid = false;
+            } else layoutNew.setError(null);
+            
+            if (!newPass.equals(confirmPass)) {
+                layoutConfirm.setError("Passwords do not match");
+                valid = false;
+            } else layoutConfirm.setError(null);
+
+            if (!valid) return;
+
+            AuthCredential credential = EmailAuthProvider.getCredential(user.getEmail(), currentPass);
+            user.reauthenticate(credential).addOnCompleteListener(authTask -> {
+                if (authTask.isSuccessful()) {
+                    user.updatePassword(newPass).addOnCompleteListener(updateTask -> {
+                        if (updateTask.isSuccessful()) {
+                            UiNotifier.success(getContext(), "Password changed successfully");
+                            dialog.dismiss();
+                        } else {
+                            UiNotifier.error(getContext(), "Failed to update password");
+                        }
+                    });
+                } else {
+                    Exception e = authTask.getException();
+                    if (e instanceof FirebaseAuthInvalidCredentialsException) {
+                        layoutCurrent.setError("Incorrect current password");
+                    } else {
+                        UiNotifier.error(getContext(), "Authentication failed");
+                    }
+                }
+            });
+        });
+
+        dialog.show();
+    }
+
+    private void showForgotPasswordDialog(String prefilledEmail) {
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_forgot_password, null);
+        dialog.setContentView(dialogView);
+
+        TextInputEditText emailInput = dialogView.findViewById(R.id.input_email_reset);
+        TextInputLayout emailLayout = dialogView.findViewById(R.id.input_email_layout_reset);
+        MaterialButton buttonCancel = dialogView.findViewById(R.id.button_cancel_reset);
+        MaterialButton buttonSend = dialogView.findViewById(R.id.button_send_reset);
+
+        if (prefilledEmail != null) {
+            emailInput.setText(prefilledEmail);
+        }
+
+        buttonCancel.setOnClickListener(v -> dialog.dismiss());
+        buttonSend.setOnClickListener(v -> {
+            String email = emailInput.getText().toString().trim();
+            if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                emailLayout.setError("Invalid email format");
+                return;
+            }
+            emailLayout.setError(null);
+            FirebaseAuth.getInstance().sendPasswordResetEmail(email).addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    UiNotifier.success(getContext(), "If registered, a reset link has been sent.");
+                    dialog.dismiss();
+                } else {
+                    emailLayout.setError("Failed to send reset link");
+                }
+            });
+        });
+
+        dialog.show();
     }
 
     private void setupPushNotifications() {
@@ -125,6 +262,3 @@ public class SettingsFragment extends Fragment {
         }
     }
 }
-
-
-

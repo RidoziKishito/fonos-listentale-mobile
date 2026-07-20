@@ -24,11 +24,13 @@ import androidx.navigation.Navigation;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import androidx.credentials.CredentialManager;
 import androidx.credentials.GetCredentialRequest;
@@ -102,7 +104,51 @@ public class LoginFragment extends Fragment {
             Navigation.findNavController(v).navigate(R.id.action_loginFragment_to_registerFragment)
         );
 
+        View forgotPasswordBtn = view.findViewById(R.id.text_forgot_password);
+        if (forgotPasswordBtn != null) {
+            forgotPasswordBtn.setOnClickListener(v -> showForgotPasswordDialog());
+        }
+
         buttonGoogle.setOnClickListener(v -> performGoogleSignIn());
+    }
+
+    private void showForgotPasswordDialog() {
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_forgot_password, null);
+        dialog.setContentView(dialogView);
+
+        TextInputEditText emailInput = dialogView.findViewById(R.id.input_email_reset);
+        TextInputLayout emailLayout = dialogView.findViewById(R.id.input_email_layout_reset);
+        MaterialButton buttonCancel = dialogView.findViewById(R.id.button_cancel_reset);
+        MaterialButton buttonSend = dialogView.findViewById(R.id.button_send_reset);
+
+        buttonCancel.setOnClickListener(v -> dialog.dismiss());
+        buttonSend.setOnClickListener(v -> {
+            String email = emailInput.getText().toString().trim();
+            if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                emailLayout.setError("Invalid email format");
+                return;
+            }
+            emailLayout.setError(null);
+            
+            // Firebase Email Enumeration Protection is enabled by default.
+            // sendPasswordResetEmail will return success even if email doesn't exist.
+            mAuth.sendPasswordResetEmail(email).addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    UiNotifier.success(getContext(), "If registered, a reset link has been sent.");
+                    dialog.dismiss();
+                } else {
+                    Exception e = task.getException();
+                    if (e instanceof FirebaseAuthInvalidUserException) {
+                        emailLayout.setError("No account found with this email");
+                    } else {
+                        emailLayout.setError("Failed to send reset link");
+                    }
+                }
+            });
+        });
+
+        dialog.show();
     }
 
     private void performGoogleSignIn() {
@@ -195,6 +241,5 @@ public class LoginFragment extends Fragment {
         imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
     }
 }
-
 
 

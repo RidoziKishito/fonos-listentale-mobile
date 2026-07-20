@@ -64,6 +64,21 @@
                 android:background="@color/outline_soft" />
 
             <TextView
+                android:id="@+id/button_change_password"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:gravity="center_vertical"
+                android:text="Change Password"
+                android:textColor="@color/slate_800"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/outline_soft" />
+
+            <TextView
                 android:id="@+id/button_clear_data"
                 android:layout_width="match_parent"
                 android:layout_height="54dp"

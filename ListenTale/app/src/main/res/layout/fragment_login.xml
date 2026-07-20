@@ -92,6 +92,18 @@
             android:textSize="16sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <TextView
+        android:id="@+id/text_forgot_password"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Forgot password?"
+        android:textColor="@color/primary_600"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/input_password_layout" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/button_sign_in"
         android:layout_width="match_parent"
@@ -104,7 +116,7 @@
         android:textSize="18sp"
         android:textStyle="bold"
         app:cornerRadius="32dp"
-        app:layout_constraintTop_toBottomOf="@id/input_password_layout" />
+        app:layout_constraintTop_toBottomOf="@id/text_forgot_password" />
 
     <TextView
         android:id="@+id/text_signup"
@@ -167,3 +179,4 @@
         app:strokeColor="@color/slate_200" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+
