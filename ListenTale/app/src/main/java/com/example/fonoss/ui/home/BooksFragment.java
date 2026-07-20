@@ -19,12 +19,16 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 @AndroidEntryPoint
 public class BooksFragment extends Fragment {
@@ -35,6 +39,10 @@ public class BooksFragment extends Fragment {
     private BookAdapter recommendedAdapter;
     private FirebaseFirestore db;
     private ProgressBar loadingBar;
+    private List<Book> rawTrendingBooks = new ArrayList<>();
+    private List<Book> rawRecommendedBooks = new ArrayList<>();
+    private List<String> userFavoriteGenres = new ArrayList<>();
+    private Map<String, Integer> savedGenreWeights = new HashMap<>();
 
     @Nullable
     @Override
@@ -48,6 +56,11 @@ public class BooksFragment extends Fragment {
         
         db = FirebaseFirestore.getInstance();
         loadingBar = view.findViewById(R.id.loading_bar);
+
+        com.google.android.material.chip.ChipGroup sortChipGroup = view.findViewById(R.id.chip_group_sort);
+        sortChipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            applyCurrentSort();
+        });
 
         view.findViewById(R.id.button_download_manager).setOnClickListener(v ->
                 new DownloadBookDialog().show(getChildFragmentManager(), "DownloadBookDialog"));
@@ -99,26 +112,85 @@ public class BooksFragment extends Fragment {
         Navigation.findNavController(requireView()).navigate(R.id.action_booksFragment_to_ebookReaderFragment, bundle);
     }
 
+    private void applyCurrentSort() {
+        if (getView() == null) return;
+        com.google.android.material.chip.ChipGroup sortChipGroup = getView().findViewById(R.id.chip_group_sort);
+        int checkedId = sortChipGroup.getCheckedChipId();
+
+        Comparator<Book> comparator;
+        if (checkedId == R.id.chip_sort_views) {
+            comparator = (b1, b2) -> Long.compare(b2.getViews(), b1.getViews());
+        } else if (checkedId == R.id.chip_sort_date) {
+            comparator = (b1, b2) -> Long.compare(b2.getPublishDate(), b1.getPublishDate());
+        } else {
+            // Relevance
+            comparator = (b1, b2) -> {
+                int score1 = calculateRelevanceScore(b1);
+                int score2 = calculateRelevanceScore(b2);
+                if (score1 != score2) return Integer.compare(score2, score1);
+                return Double.compare(b2.getRating(), b1.getRating());
+            };
+        }
+
+        recommendedBooks.clear();
+        recommendedBooks.addAll(rawRecommendedBooks);
+        Collections.sort(recommendedBooks, comparator);
+        recommendedAdapter.notifyDataSetChanged();
+
+        // Trending section stays as rawTrendingBooks (not sorted by chips)
+        trendingBooks.clear();
+        trendingBooks.addAll(rawTrendingBooks);
+        trendingAdapter.notifyDataSetChanged();
+    }
+
+    private int calculateRelevanceScore(Book book) {
+        int score = 0;
+        if (book.getGenres() != null) {
+            for (String genre : book.getGenres()) {
+                score += getSavedGenreWeight(genre) * 10;
+            }
+        }
+        score += getSavedGenreWeight(book.getGenre()) * 10;
+
+        if (userFavoriteGenres != null && !userFavoriteGenres.isEmpty()) {
+            if (book.getGenres() != null) {
+                for (String g : book.getGenres()) {
+                    if (containsGenre(userFavoriteGenres, g)) score++;
+                }
+            }
+            if (containsGenre(userFavoriteGenres, book.getGenre())) {
+                score++;
+            }
+        }
+        return score;
+    }
+
     private void fetchBooks() {
         FirebaseAuth mAuth = FirebaseAuth.getInstance();
         if (mAuth.getCurrentUser() != null) {
             db.collection("users").document(mAuth.getCurrentUser().getUid()).get()
                 .addOnSuccessListener(documentSnapshot -> {
-                    List<String> favoriteGenres = null;
+                    userFavoriteGenres = new ArrayList<>();
+                    savedGenreWeights = new HashMap<>();
                     if (documentSnapshot.exists()) {
                         Object genresObj = documentSnapshot.get("favoriteGenres");
                         if (genresObj instanceof List) {
-                            favoriteGenres = (List<String>) genresObj;
+                            userFavoriteGenres = (List<String>) genresObj;
                         }
+                        savedGenreWeights = buildSavedGenreWeights(documentSnapshot.get("saved"));
                     }
-                    fetchBooksWithGenres(favoriteGenres);
-                }).addOnFailureListener(e -> fetchBooksWithGenres(null));
+                    fetchBooksWithGenres();
+                }).addOnFailureListener(e -> {
+                    savedGenreWeights = new HashMap<>();
+                    fetchBooksWithGenres();
+                });
         } else {
-            fetchBooksWithGenres(null);
+            savedGenreWeights = new HashMap<>();
+            fetchBooksWithGenres();
         }
     }
 
-    private void fetchBooksWithGenres(List<String> favoriteGenres) {
+    private void fetchBooksWithGenres() {
         if (loadingBar != null) loadingBar.setVisibility(View.VISIBLE);
         
         java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor();
@@ -132,46 +204,25 @@ public class BooksFragment extends Fragment {
                         book = document.toObject(Book.class);
                     } catch (Exception e) {
                         e.printStackTrace();
-                        // Ignore malformed books to prevent crash
                     }
                     if (book == null) continue;
                     book.setId(document.getId());
                     
-                    // Logic separation
                     String title = book.getTitle() != null ? book.getTitle().toLowerCase() : "";
                     if (title.contains("sherlock") || title.contains("romeo") || title.contains("gatsby")) {
                         tempTrending.add(book);
                     } else {
-                        if (favoriteGenres != null && !favoriteGenres.isEmpty()) {
-                            boolean matches = false;
-                            if (book.getGenres() != null) {
-                                for (String genre : book.getGenres()) {
-                                    if (favoriteGenres.contains(genre)) {
-                                        matches = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (!matches && book.getGenre() != null && favoriteGenres.contains(book.getGenre())) {
-                                matches = true;
-                            }
-                            if (matches) {
-                                tempRecommended.add(book);
-                            }
-                        } else {
-                            tempRecommended.add(book);
-                        }
+                        tempRecommended.add(book);
                     }
                 }
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
                         if (loadingBar != null) loadingBar.setVisibility(View.GONE);
-                        trendingBooks.clear();
-                        trendingBooks.addAll(tempTrending);
-                        recommendedBooks.clear();
-                        recommendedBooks.addAll(tempRecommended);
-                        trendingAdapter.notifyDataSetChanged();
-                        recommendedAdapter.notifyDataSetChanged();
+                        rawTrendingBooks.clear();
+                        rawTrendingBooks.addAll(tempTrending);
+                        rawRecommendedBooks.clear();
+                        rawRecommendedBooks.addAll(tempRecommended);
+                        applyCurrentSort();
                     });
                 }
             } else {
@@ -183,5 +234,57 @@ public class BooksFragment extends Fragment {
                 }
             }
         });
+    }
+
+    private Map<String, Integer> buildSavedGenreWeights(Object savedObj) {
+        Map<String, Integer> weights = new HashMap<>();
+        if (!(savedObj instanceof List)) return weights;
+
+        for (Object item : (List<?>) savedObj) {
+            if (!(item instanceof Map)) continue;
+
+            Map<?, ?> bookMap = (Map<?, ?>) item;
+            addGenreWeight(weights, bookMap.get("genre"));
+            addGenreWeight(weights, bookMap.get("gender"));
+
+            Object genresObj = bookMap.get("genres");
+            if (genresObj instanceof List) {
+                for (Object genre : (List<?>) genresObj) {
+                    addGenreWeight(weights, genre);
+                }
+            }
+        }
+        return weights;
+    }
+
+    private void addGenreWeight(Map<String, Integer> weights, Object genreObj) {
+        if (!(genreObj instanceof String)) return;
+
+        String genre = normalizeGenre((String) genreObj);
+        if (genre.isEmpty()) return;
+
+        Integer current = weights.get(genre);
+        weights.put(genre, current == null ? 1 : current + 1);
+    }
+
+    private int getSavedGenreWeight(String genre) {
+        if (genre == null || savedGenreWeights == null) return 0;
+
+        Integer weight = savedGenreWeights.get(normalizeGenre(genre));
+        return weight == null ? 0 : weight;
+    }
+
+    private boolean containsGenre(List<String> genres, String targetGenre) {
+        if (genres == null || targetGenre == null) return false;
+
+        String normalizedTarget = normalizeGenre(targetGenre);
+        for (String genre : genres) {
+            if (normalizedTarget.equals(normalizeGenre(genre))) return true;
+        }
+        return false;
+    }
+
+    private String normalizeGenre(String genre) {
+        return genre == null ? "" : genre.trim().toLowerCase(Locale.US);
     }
 }
