@@ -23,6 +23,15 @@ import androidx.navigation.Navigation;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.slider.Slider;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import android.content.Context;
+import android.content.SharedPreferences;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @AndroidEntryPoint
 public class WelcomeFragment extends Fragment {
@@ -46,6 +55,17 @@ public class WelcomeFragment extends Fragment {
     private View buttonSkipLogin;
     private View authLayout;
     private View welcomeOverlay;
+    private View scrollOptions;
+    private View scrollChips;
+    private com.google.android.material.chip.ChipGroup chipGroupGenres;
+
+    // Survey State
+    private String selectedBooksRead = "";
+    private int selectedTargetBooks = 10;
+    private Set<String> selectedObstacles = new HashSet<>();
+    private String selectedDailyTime = "";
+    private Set<String> selectedGenres = new HashSet<>();
+    private List<String> allAvailableGenres = new ArrayList<>();
 
     @Nullable
     @Override
@@ -72,6 +92,18 @@ public class WelcomeFragment extends Fragment {
         // Reset step if we come back from Login/Register
         currentStep = 0;
 
+        // Initialize genres statically
+        allAvailableGenres.clear();
+        allAvailableGenres.addAll(java.util.Arrays.asList(
+                "Allegory", "Children", "Christmas stories", "Classic", "Essays",
+                "Fantasy", "Feminist literature", "Fiction", "Gothic fiction",
+                "Historical fiction", "Horror", "Mystery", "Novellas", "Philosophy",
+                "Political satire", "Psychological fiction", "Romance", "Satire",
+                "Science fiction", "Self-Help", "Short stories", "Supernatural fiction",
+                "Vampires", "Weird fiction"
+        ));
+        Collections.sort(allAvailableGenres);
+
         // Bind views
         onboardingHeader = view.findViewById(R.id.onboarding_header);
         progressBar = view.findViewById(R.id.onboarding_progress);
@@ -89,9 +121,15 @@ public class WelcomeFragment extends Fragment {
         buttonSkipLogin = view.findViewById(R.id.button_skip_login);
         authLayout = view.findViewById(R.id.auth_layout);
         welcomeOverlay = view.findViewById(R.id.welcome_overlay);
+        scrollOptions = view.findViewById(R.id.scroll_options);
+        scrollChips = view.findViewById(R.id.scroll_chips);
+        chipGroupGenres = view.findViewById(R.id.chip_group_genres);
 
         buttonContinue.setOnClickListener(v -> nextStep());
-        buttonSkipLogin.setOnClickListener(v -> showFinalAuth());
+        buttonSkipLogin.setOnClickListener(v -> {
+            clearSurveyData();
+            showFinalAuth();
+        });
         view.findViewById(R.id.button_back_onboarding).setOnClickListener(v -> prevStep());
 
         view.findViewById(R.id.button_login).setOnClickListener(v -> 
@@ -104,6 +142,7 @@ public class WelcomeFragment extends Fragment {
 
         onboardingSlider.addOnChangeListener((slider, value, fromUser) -> {
             int intValue = (int) value;
+            selectedTargetBooks = intValue;
             if (intValue >= 51) {
                 textSliderValue.setText("50+ books / year");
             } else {
@@ -115,11 +154,14 @@ public class WelcomeFragment extends Fragment {
     }
 
     private void nextStep() {
+        if (currentStep == 11) {
+            saveSurveyData();
+        }
         if (currentStep < TOTAL_STEPS - 1) {
             currentStep++;
             updateUI();
         } else {
-            showFinalAuth();
+            Navigation.findNavController(getView()).navigate(R.id.action_welcomeFragment_to_registerFragment);
         }
     }
 
@@ -171,7 +213,8 @@ public class WelcomeFragment extends Fragment {
 
     private void renderStep() {
         layoutOptions.removeAllViews();
-        layoutOptions.setVisibility(View.GONE);
+        scrollOptions.setVisibility(View.GONE);
+        scrollChips.setVisibility(View.GONE);
         layoutSlider.setVisibility(View.GONE);
         imageOnboarding.setVisibility(View.GONE);
         textInstruction.setVisibility(View.VISIBLE);
@@ -189,16 +232,17 @@ public class WelcomeFragment extends Fragment {
             case 2:
                 textQuestion.setText("How many books did you read last year?");
                 textInstruction.setText("This helps us understand your reading habits.");
-                layoutOptions.setVisibility(View.VISIBLE);
+                scrollOptions.setVisibility(View.VISIBLE);
                 buttonContinue.setVisibility(View.GONE);
-                addOption("0-2 books", "I rarely read/listen to books.", true, false);
-                addOption("3-5 books", "I read occasionally.", true, false);
-                addOption("More than 6 books", "Books are my passion.", true, false);
+                addOption("0-2 books", "I rarely read/listen to books.", true, false, 2);
+                addOption("3-5 books", "I read occasionally.", true, false, 2);
+                addOption("More than 6 books", "Books are my passion.", true, false, 2);
                 break;
             case 3:
                 textQuestion.setText("What is your target number?");
                 textInstruction.setText("Set a goal for yourself this year.");
                 layoutSlider.setVisibility(View.VISIBLE);
+                onboardingSlider.setValue(selectedTargetBooks);
                 break;
             case 4:
                 textQuestion.setText("10 is the average number");
@@ -208,23 +252,23 @@ public class WelcomeFragment extends Fragment {
             case 5:
                 textQuestion.setText("What's stopping you from reaching your goal?");
                 textInstruction.setText("You can choose multiple options.");
-                layoutOptions.setVisibility(View.VISIBLE);
+                scrollOptions.setVisibility(View.VISIBLE);
                 buttonContinue.setText("Next");
                 buttonContinue.setVisibility(View.VISIBLE);
-                setButtonEnabled(false); // Disable initially
-                addOption("Lack of time / Too busy", "", false, true);
-                addOption("Procrastination", "", false, true);
-                addOption("Too many distractions", "", false, true);
-                addOption("Financial constraints", "", false, true);
+                addOption("Lack of time / Too busy", "", false, true, 5);
+                addOption("Procrastination", "", false, true, 5);
+                addOption("Too many distractions", "", false, true, 5);
+                addOption("Financial constraints", "", false, true, 5);
+                updateButtonState();
                 break;
             case 6:
                 textQuestion.setText("How much time do you spend daily?");
                 textInstruction.setText("Even 15 minutes a day makes a difference.");
-                layoutOptions.setVisibility(View.VISIBLE);
+                scrollOptions.setVisibility(View.VISIBLE);
                 buttonContinue.setVisibility(View.GONE);
-                addOption("Less than 30 minutes", "", true, false);
-                addOption("30-60 minutes", "", true, false);
-                addOption("Over 60 minutes", "", true, false);
+                addOption("Less than 30 minutes", "", true, false, 6);
+                addOption("30-60 minutes", "", true, false, 6);
+                addOption("Over 60 minutes", "", true, false, 6);
                 break;
             case 7:
                 textQuestion.setText("You are not alone!");
@@ -238,15 +282,50 @@ public class WelcomeFragment extends Fragment {
                 break;
             case 9:
                 textQuestion.setText("Which topics interest you?");
-                textInstruction.setText("You can choose multiple options.");
-                layoutOptions.setVisibility(View.VISIBLE);
+                textInstruction.setText("You can choose multiple options (Max 10).");
+                scrollChips.setVisibility(View.VISIBLE);
                 buttonContinue.setText("Next");
                 buttonContinue.setVisibility(View.VISIBLE);
-                setButtonEnabled(false); // Disable initially
-                addOption("Self-development", "", false, true);
-                addOption("Business & Investment", "", false, true);
-                addOption("Novels & Stories", "", false, true);
-                addOption("Health & Lifestyle", "", false, true);
+                chipGroupGenres.removeAllViews();
+                
+                List<String> displayGenres = allAvailableGenres;
+
+                for (String genre : displayGenres) {
+                    com.google.android.material.chip.Chip chip = new com.google.android.material.chip.Chip(getContext());
+                    chip.setText(genre);
+                    chip.setCheckable(true);
+                    chip.setChecked(selectedGenres.contains(genre));
+                    chip.setChipBackgroundColorResource(R.color.white);
+                    chip.setCheckedIconVisible(false);
+                    chip.setTextColor(getResources().getColor(R.color.slate_900));
+                    
+                    if (chip.isChecked()) {
+                        chip.setChipBackgroundColorResource(R.color.primary_600);
+                        chip.setTextColor(getResources().getColor(android.R.color.white));
+                    }
+                    
+                    chip.setOnClickListener(v -> {
+                        if (chip.isChecked()) {
+                            if (selectedGenres.size() >= 10) {
+                                chip.setChecked(false);
+                                android.widget.Toast.makeText(getContext(), "You can select up to 10 topics", android.widget.Toast.LENGTH_SHORT).show();
+                            } else {
+                                selectedGenres.add(genre);
+                                chip.setChipBackgroundColorResource(R.color.primary_600);
+                                chip.setTextColor(getResources().getColor(android.R.color.white));
+                            }
+                        } else {
+                            selectedGenres.remove(genre);
+                            chip.setChipBackgroundColorResource(R.color.white);
+                            chip.setTextColor(getResources().getColor(R.color.slate_900));
+                        }
+                        updateGenresChipsState();
+                        setButtonEnabled(!selectedGenres.isEmpty());
+                    });
+                    chipGroupGenres.addView(chip);
+                }
+                updateGenresChipsState();
+                setButtonEnabled(!selectedGenres.isEmpty());
                 break;
             case 10:
                 textQuestion.setText("93% Success Rate");
@@ -273,6 +352,25 @@ public class WelcomeFragment extends Fragment {
         }
     }
 
+    private void updateGenresChipsState() {
+        boolean atLimit = selectedGenres.size() >= 10;
+        for (int i = 0; i < chipGroupGenres.getChildCount(); i++) {
+            com.google.android.material.chip.Chip chip = (com.google.android.material.chip.Chip) chipGroupGenres.getChildAt(i);
+            if (!chip.isChecked()) {
+                if (atLimit) {
+                    chip.setAlpha(0.5f);
+                    chip.setClickable(false);
+                } else {
+                    chip.setAlpha(1.0f);
+                    chip.setClickable(true);
+                }
+            } else {
+                chip.setAlpha(1.0f);
+                chip.setClickable(true);
+            }
+        }
+    }
+
     private void updateButtonState() {
         boolean anySelected = false;
         for (int i = 0; i < layoutOptions.getChildCount(); i++) {
@@ -285,7 +383,7 @@ public class WelcomeFragment extends Fragment {
         setButtonEnabled(anySelected);
     }
 
-    private void addOption(String title, String subtitle, boolean autoNext, boolean showTick) {
+    private void addOption(String title, String subtitle, boolean autoNext, boolean showTick, int step) {
         View optionView = getLayoutInflater().inflate(R.layout.item_onboarding_option, layoutOptions, false);
         com.google.android.material.card.MaterialCardView cardView = (com.google.android.material.card.MaterialCardView) optionView;
         TextView textTitle = optionView.findViewById(R.id.text_option_title);
@@ -299,8 +397,31 @@ public class WelcomeFragment extends Fragment {
             textSub.setText(subtitle);
         }
 
+        // Restore selected state when rendering
+        boolean isSelected = false;
+        if (step == 2 && title.equals(selectedBooksRead)) isSelected = true;
+        if (step == 5 && selectedObstacles.contains(title)) isSelected = true;
+        if (step == 6 && title.equals(selectedDailyTime)) isSelected = true;
+        
+        if (isSelected) {
+             if (autoNext) {
+                 cardView.setStrokeWidth(4);
+                 cardView.setStrokeColor(android.content.res.ColorStateList.valueOf(getResources().getColor(R.color.primary_600)));
+                 cardView.setCardBackgroundColor(getResources().getColor(R.color.primary_light));
+             } else {
+                 checkIcon.setVisibility(View.VISIBLE);
+                 cardView.setStrokeWidth(0);
+                 cardView.setCardBackgroundColor(getResources().getColor(R.color.primary_600));
+                 textTitle.setTextColor(getResources().getColor(android.R.color.white));
+             }
+        }
+
         optionView.setOnClickListener(v -> {
             if (autoNext) {
+                // Save state
+                if (step == 2) selectedBooksRead = title;
+                if (step == 6) selectedDailyTime = title;
+                
                 // Single choice mode
                 cardView.setStrokeWidth(4);
                 cardView.setStrokeColor(android.content.res.ColorStateList.valueOf(getResources().getColor(R.color.primary_600)));
@@ -308,16 +429,20 @@ public class WelcomeFragment extends Fragment {
                 v.postDelayed(() -> nextStep(), 200);
             } else {
                 // Multi choice mode: Toggle
-                if (checkIcon.getVisibility() == View.VISIBLE) {
-                    checkIcon.setVisibility(View.GONE);
-                    cardView.setStrokeWidth(0);
-                    cardView.setCardBackgroundColor(getResources().getColor(android.R.color.white));
-                    textTitle.setTextColor(getResources().getColor(R.color.slate_900));
-                } else {
+                boolean willBeSelected = (checkIcon.getVisibility() == View.GONE);
+                
+                if (willBeSelected) {
                     checkIcon.setVisibility(View.VISIBLE);
                     cardView.setStrokeWidth(0);
                     cardView.setCardBackgroundColor(getResources().getColor(R.color.primary_600));
                     textTitle.setTextColor(getResources().getColor(android.R.color.white));
+                    if (step == 5) selectedObstacles.add(title);
+                } else {
+                    checkIcon.setVisibility(View.GONE);
+                    cardView.setStrokeWidth(0);
+                    cardView.setCardBackgroundColor(getResources().getColor(android.R.color.white));
+                    textTitle.setTextColor(getResources().getColor(R.color.slate_900));
+                    if (step == 5) selectedObstacles.remove(title);
                 }
                 updateButtonState();
             }
@@ -338,5 +463,24 @@ public class WelcomeFragment extends Fragment {
         getView().setBackgroundResource(R.drawable.bg_welcome_gradient);
 
         authLayout.setVisibility(View.VISIBLE);
+    }
+
+    private void saveSurveyData() {
+        if (getActivity() == null) return;
+        SharedPreferences prefs = getActivity().getSharedPreferences("SurveyPrefs", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("selectedBooksRead", selectedBooksRead);
+        editor.putInt("selectedTargetBooks", selectedTargetBooks);
+        editor.putStringSet("selectedObstacles", selectedObstacles);
+        editor.putString("selectedDailyTime", selectedDailyTime);
+        editor.putStringSet("selectedGenres", selectedGenres);
+        editor.putBoolean("hasSurveyData", true);
+        editor.apply();
+    }
+
+    private void clearSurveyData() {
+        if (getActivity() == null) return;
+        SharedPreferences prefs = getActivity().getSharedPreferences("SurveyPrefs", Context.MODE_PRIVATE);
+        prefs.edit().clear().apply();
     }
 }

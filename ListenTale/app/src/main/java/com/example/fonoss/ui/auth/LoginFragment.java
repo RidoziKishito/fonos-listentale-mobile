@@ -7,6 +7,7 @@ import com.example.fonoss.utils.UiNotifier;
 import com.example.fonoss.ui.home.WelcomeFragment;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -40,6 +41,9 @@ import androidx.credentials.CustomCredential;
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -186,8 +190,13 @@ public class LoginFragment extends Fragment {
                 mAuth.signInWithCredential(authCredential)
                         .addOnCompleteListener(task -> {
                             if (task.isSuccessful()) {
-                                userViewModel.fetchUserData();
-                                Navigation.findNavController(requireView()).navigate(R.id.action_loginFragment_to_booksFragment);
+                                boolean isNewUser = task.getResult().getAdditionalUserInfo().isNewUser();
+                                if (isNewUser) {
+                                    createFirebaseUserDoc(mAuth.getCurrentUser().getDisplayName(), mAuth.getCurrentUser().getEmail());
+                                } else {
+                                    userViewModel.fetchUserData();
+                                    Navigation.findNavController(requireView()).navigate(R.id.action_loginFragment_to_booksFragment);
+                                }
                             } else {
                                 UiNotifier.error(getContext(), "Authentication failed");
                             }
@@ -195,6 +204,45 @@ public class LoginFragment extends Fragment {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void createFirebaseUserDoc(String name, String email) {
+        String uid = mAuth.getCurrentUser().getUid();
+        Map<String, Object> user = new HashMap<>();
+        user.put("name", name != null ? name : "Google User");
+        user.put("email", email);
+        user.put("saved", new ArrayList<>());
+        user.put("downloaded", new ArrayList<>());
+        user.put("inProgress", new ArrayList<>());
+        user.put("completed", new ArrayList<>());
+        user.put("progressPositions", new HashMap<String, Long>());
+        user.put("progressChapters", new HashMap<String, Long>());
+
+        appendSurveyDataAndClear(user);
+
+        FirebaseFirestore.getInstance().collection("users").document(uid).set(user)
+                .addOnSuccessListener(aVoid -> {
+                    userViewModel.fetchUserData();
+                    Navigation.findNavController(requireView()).navigate(R.id.action_loginFragment_to_booksFragment);
+                });
+    }
+
+    private void appendSurveyDataAndClear(Map<String, Object> user) {
+        if (getActivity() == null) return;
+        SharedPreferences prefs = getActivity().getSharedPreferences("SurveyPrefs", Context.MODE_PRIVATE);
+        if (prefs.getBoolean("hasSurveyData", false)) {
+            user.put("booksRead", prefs.getString("selectedBooksRead", ""));
+            user.put("targetBooks", prefs.getInt("selectedTargetBooks", 10));
+            user.put("dailyTime", prefs.getString("selectedDailyTime", ""));
+            
+            java.util.Set<String> obstacles = prefs.getStringSet("selectedObstacles", new java.util.HashSet<>());
+            user.put("obstacles", new ArrayList<>(obstacles));
+            
+            java.util.Set<String> genres = prefs.getStringSet("selectedGenres", new java.util.HashSet<>());
+            user.put("favoriteGenres", new ArrayList<>(genres));
+            
+            prefs.edit().clear().apply();
         }
     }
 

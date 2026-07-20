@@ -20,6 +20,7 @@ import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.tabs.TabLayout;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
@@ -99,6 +100,25 @@ public class BooksFragment extends Fragment {
     }
 
     private void fetchBooks() {
+        FirebaseAuth mAuth = FirebaseAuth.getInstance();
+        if (mAuth.getCurrentUser() != null) {
+            db.collection("users").document(mAuth.getCurrentUser().getUid()).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    List<String> favoriteGenres = null;
+                    if (documentSnapshot.exists()) {
+                        Object genresObj = documentSnapshot.get("favoriteGenres");
+                        if (genresObj instanceof List) {
+                            favoriteGenres = (List<String>) genresObj;
+                        }
+                    }
+                    fetchBooksWithGenres(favoriteGenres);
+                }).addOnFailureListener(e -> fetchBooksWithGenres(null));
+        } else {
+            fetchBooksWithGenres(null);
+        }
+    }
+
+    private void fetchBooksWithGenres(List<String> favoriteGenres) {
         if (loadingBar != null) loadingBar.setVisibility(View.VISIBLE);
         
         java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor();
@@ -122,7 +142,25 @@ public class BooksFragment extends Fragment {
                     if (title.contains("sherlock") || title.contains("romeo") || title.contains("gatsby")) {
                         tempTrending.add(book);
                     } else {
-                        tempRecommended.add(book);
+                        if (favoriteGenres != null && !favoriteGenres.isEmpty()) {
+                            boolean matches = false;
+                            if (book.getGenres() != null) {
+                                for (String genre : book.getGenres()) {
+                                    if (favoriteGenres.contains(genre)) {
+                                        matches = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!matches && book.getGenre() != null && favoriteGenres.contains(book.getGenre())) {
+                                matches = true;
+                            }
+                            if (matches) {
+                                tempRecommended.add(book);
+                            }
+                        } else {
+                            tempRecommended.add(book);
+                        }
                     }
                 }
                 if (getActivity() != null) {

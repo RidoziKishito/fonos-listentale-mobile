@@ -260,14 +260,39 @@
                 android:textColor="@color/slate_500"
                 android:textSize="16sp" />
 
-            <LinearLayout
-                android:id="@+id/layout_options"
+            <ScrollView
+                android:id="@+id/scroll_options"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:layout_marginTop="32dp"
-                android:gravity="bottom"
-                android:orientation="vertical" />
+                android:fillViewport="true"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/layout_options"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="bottom"
+                    android:orientation="vertical" />
+            </ScrollView>
+
+            <ScrollView
+                android:id="@+id/scroll_chips"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_marginTop="32dp"
+                android:visibility="gone">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chip_group_genres"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    app:chipSpacingHorizontal="8dp"
+                    app:chipSpacingVertical="8dp" />
+            </ScrollView>
 
             <LinearLayout
                 android:id="@+id/layout_slider"
