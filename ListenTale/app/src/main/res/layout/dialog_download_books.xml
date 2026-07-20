@@ -48,6 +48,51 @@
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <LinearLayout
+        android:id="@+id/layout_storage_usage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_island_glass"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="14dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-bold"
+                android:text="Storage used"
+                android:textColor="@color/slate_900"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/text_download_storage_used"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Calculating..."
+                android:textColor="@color/slate_600"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/button_clear_download_storage"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:text="Delete"
+            android:textAllCaps="false"
+            android:textColor="@color/red_600"
+            android:textStyle="bold" />
+    </LinearLayout>
+
     <CheckBox
         android:id="@+id/checkbox_select_all_books"
         android:layout_width="wrap_content"

@@ -133,6 +133,25 @@ public class LibraryViewModel extends ViewModel {
         }
     }
 
+    public void clearDownloadedBooks() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        List<Book> currentDownloads = downloadedBooks.getValue();
+        if (currentDownloads != null) {
+            for (Book book : currentDownloads) {
+                if (book == null || book.getId() == null) continue;
+                pendingDeletedDownloadIds.add(book.getId());
+                cancelDownload(book.getId());
+            }
+        }
+
+        clearLocalDownloads();
+        downloadedBooks.setValue(new ArrayList<>());
+
+        if (user != null) {
+            db.collection("users").document(user.getUid()).update("downloaded", new ArrayList<>());
+        }
+    }
+
     private List<Book> updateListFromMap(com.google.firebase.firestore.DocumentSnapshot snapshot, String key, MutableLiveData<List<Book>> liveData) {
         Object data = snapshot.get(key);
         List<Book> books = new ArrayList<>();

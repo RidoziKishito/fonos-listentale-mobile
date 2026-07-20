@@ -6,6 +6,7 @@ import com.example.fonoss.ui.library.LibraryViewModel;
 import com.example.fonoss.data.model.Book;
 
 import android.os.Bundle;
+import android.os.Environment;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -33,6 +34,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -55,6 +57,8 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
     private CheckBox selectAllCheckBox;
     private ProgressBar loadingBar;
     private TextView emptyText;
+    private TextView storageUsedText;
+    private View clearStorageButton;
     private LibraryViewModel libraryViewModel;
 
     @Nullable
@@ -71,6 +75,8 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
         libraryViewModel = new ViewModelProvider(requireActivity()).get(LibraryViewModel.class);
         loadingBar = view.findViewById(R.id.loading_download_books);
         emptyText = view.findViewById(R.id.text_no_download_books);
+        storageUsedText = view.findViewById(R.id.text_download_storage_used);
+        clearStorageButton = view.findViewById(R.id.button_clear_download_storage);
         downloadButton = view.findViewById(R.id.button_download_selected);
         selectAllCheckBox = view.findViewById(R.id.checkbox_select_all_books);
         TextInputEditText searchInput = view.findViewById(R.id.input_search_download_books);
@@ -83,6 +89,7 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
 
         view.findViewById(R.id.button_close_download_dialog).setOnClickListener(v -> dismiss());
         downloadButton.setOnClickListener(v -> downloadSelectedBooks());
+        clearStorageButton.setOnClickListener(v -> showClearStorageConfirmation());
         selectAllCheckBox.setOnClickListener(v -> selectAllVisible(selectAllCheckBox.isChecked()));
 
         searchInput.addTextChangedListener(new TextWatcher() {
@@ -108,11 +115,13 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
             downloadingProgressMap.keySet().removeAll(downloadedBookIds);
             selectedBookIds.removeAll(downloadedBookIds);
             filterBooks(getCurrentQuery());
+            updateStorageUsage();
         });
 
         libraryViewModel.getDownloadProgress().observe(getViewLifecycleOwner(), this::updateDownloadProgress);
 
         loadingBar.setVisibility(View.GONE);
+        updateStorageUsage();
         fetchAllBooks();
     }
 
@@ -267,6 +276,7 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
         Toast.makeText(requireContext(), "Downloads added to queue", Toast.LENGTH_SHORT).show();
         selectedBookIds.clear();
         filterBooks(getCurrentQuery());
+        updateStorageUsage();
     }
 
     private String getCurrentQuery() {
@@ -282,6 +292,78 @@ public class DownloadBookDialog extends BottomSheetDialogFragment {
     private boolean isActiveDownload(String bookId) {
         Integer progress = downloadingProgressMap.get(bookId);
         return progress != null && progress >= 0;
+    }
+
+    private void showClearStorageConfirmation() {
+        long usedBytes = calculateDownloadedStorageBytes();
+        if (usedBytes <= 0 && downloadedBookIds.isEmpty()) {
+            Toast.makeText(requireContext(), "No downloaded storage to delete", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Delete downloaded files?")
+                .setMessage("This will remove downloaded books and audio files from this device. Storage used: "
+                        + formatBytes(usedBytes) + ".")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    libraryViewModel.clearDownloadedBooks();
+                    selectedBookIds.clear();
+                    downloadedBookIds.clear();
+                    filterBooks(getCurrentQuery());
+                    updateStorageUsage();
+                    Toast.makeText(requireContext(), "Downloaded files deleted", Toast.LENGTH_SHORT).show();
+                })
+                .show();
+    }
+
+    private void updateStorageUsage() {
+        if (storageUsedText == null || clearStorageButton == null || !isAdded()) return;
+
+        long usedBytes = calculateDownloadedStorageBytes();
+        storageUsedText.setText(formatBytes(usedBytes) + " used by downloaded books");
+        clearStorageButton.setEnabled(usedBytes > 0 || !downloadedBookIds.isEmpty());
+        clearStorageButton.setAlpha(clearStorageButton.isEnabled() ? 1f : 0.45f);
+    }
+
+    private long calculateDownloadedStorageBytes() {
+        long totalBytes = 0;
+
+        String[] internalFiles = requireContext().fileList();
+        if (internalFiles != null) {
+            for (String fileName : internalFiles) {
+                if (fileName != null && fileName.startsWith("book_") && fileName.endsWith(".dat")) {
+                    totalBytes += requireContext().getFileStreamPath(fileName).length();
+                }
+            }
+        }
+
+        File musicDir = requireContext().getExternalFilesDir(Environment.DIRECTORY_MUSIC);
+        if (musicDir != null && musicDir.exists()) {
+            File[] files = musicDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    String name = file.getName();
+                    if (name.startsWith("audio_") && (name.endsWith(".mp3") || name.endsWith(".tmp"))) {
+                        totalBytes += file.length();
+                    }
+                }
+            }
+        }
+
+        return totalBytes;
+    }
+
+    private String formatBytes(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+
+        double kb = bytes / 1024.0;
+        if (kb < 1024) return String.format(Locale.ROOT, "%.1f KB", kb);
+
+        double mb = kb / 1024.0;
+        if (mb < 1024) return String.format(Locale.ROOT, "%.1f MB", mb);
+
+        return String.format(Locale.ROOT, "%.1f GB", mb / 1024.0);
     }
 
     private static class DownloadBookAdapter
