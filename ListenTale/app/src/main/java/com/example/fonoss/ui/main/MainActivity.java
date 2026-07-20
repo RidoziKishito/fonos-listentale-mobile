@@ -38,6 +38,7 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 @AndroidEntryPoint
 public class MainActivity extends AppCompatActivity {
@@ -47,6 +48,48 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREFS_NAME = "settings";
     private static final String KEY_PUSH_NOTIFICATIONS = "push_notifications";
     private android.content.BroadcastReceiver networkWarningReceiver;
+    private boolean hasShownGooglePasswordPrompt = false;
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        checkGooglePasswordPrompt();
+    }
+
+    private void checkGooglePasswordPrompt() {
+        if (hasShownGooglePasswordPrompt) return;
+        
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+        
+        boolean isGoogleUser = false;
+        boolean hasPassword = false;
+        for (com.google.firebase.auth.UserInfo userInfo : user.getProviderData()) {
+            if ("google.com".equals(userInfo.getProviderId())) isGoogleUser = true;
+            if ("password".equals(userInfo.getProviderId())) hasPassword = true;
+        }
+        
+        if (isGoogleUser && !hasPassword) {
+            hasShownGooglePasswordPrompt = true;
+            
+            new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Create Password")
+                .setMessage("You logged in with Google. You can create a password to log in with your email next time.")
+                .setPositiveButton("Create Now", (dialog, which) -> {
+                    NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
+                    if (navHostFragment != null) {
+                        try {
+                            android.os.Bundle args = new android.os.Bundle();
+                            args.putBoolean("showCreatePassword", true);
+                            navHostFragment.getNavController().navigate(R.id.settingsFragment, args);
+                        } catch (Exception e) {
+                        }
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,7 +133,6 @@ public class MainActivity extends AppCompatActivity {
                     androidx.navigation.NavDestination currentDest = navController.getCurrentDestination();
                     if (currentDest != null) {
                         int id = currentDest.getId();
-                        // Top level destinations where back should exit app
                         if (id == R.id.booksFragment || 
                             id == R.id.searchFragment || 
                             id == R.id.libraryFragment || 
@@ -101,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
                             if (backPressedTime + 2000 > System.currentTimeMillis()) {
                                 finish();
                             } else {
-                                android.widget.Toast.makeText(MainActivity.this, "Nhấn quay lại lần nữa để thoát", android.widget.Toast.LENGTH_SHORT).show();
+                                android.widget.Toast.makeText(MainActivity.this, "Nh?n quay l?i l?n n?a d? tho�t", android.widget.Toast.LENGTH_SHORT).show();
                             }
                             backPressedTime = System.currentTimeMillis();
                             return;
@@ -109,14 +151,12 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 
-                // Default back behavior
                 setEnabled(false);
                 getOnBackPressedDispatcher().onBackPressed();
                 setEnabled(true);
             }
         });
 
-        // Khởi động nạp dữ liệu thư viện ngay từ đầu nếu đã đăng nhập
         if (FirebaseAuth.getInstance().getCurrentUser() != null) {
             new ViewModelProvider(this).get(LibraryViewModel.class).fetchLibraryData();
             new ViewModelProvider(this).get(UserViewModel.class).fetchUserData();
@@ -233,5 +273,3 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 }
-
-

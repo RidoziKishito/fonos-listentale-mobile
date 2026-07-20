@@ -70,7 +70,7 @@ public class SettingsFragment extends Fragment {
         view.findViewById(R.id.button_clear_data).setOnClickListener(v -> showClearDataWarning());
         view.findViewById(R.id.button_about_app).setOnClickListener(v -> showAboutDialog());
 
-        View changePasswordBtn = view.findViewById(R.id.button_change_password);
+        TextView authActionBtn = view.findViewById(R.id.button_change_password);
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         boolean isPasswordUser = false;
         if (user != null) {
@@ -80,13 +80,22 @@ public class SettingsFragment extends Fragment {
                     break;
                 }
             }
-        }
-        
-        if (isPasswordUser) {
-            changePasswordBtn.setVisibility(View.VISIBLE);
-            changePasswordBtn.setOnClickListener(v -> showChangePasswordDialog(user));
+            
+            authActionBtn.setVisibility(View.VISIBLE);
+            if (isPasswordUser) {
+                authActionBtn.setText("Change Password");
+                authActionBtn.setOnClickListener(v -> showChangePasswordDialog(user));
+            } else {
+                authActionBtn.setText("Create Password");
+                authActionBtn.setOnClickListener(v -> showCreatePasswordDialog(user, authActionBtn));
+                
+                if (getArguments() != null && getArguments().getBoolean("showCreatePassword", false)) {
+                    authActionBtn.post(() -> showCreatePasswordDialog(user, authActionBtn));
+                    getArguments().putBoolean("showCreatePassword", false);
+                }
+            }
         } else {
-            changePasswordBtn.setVisibility(View.GONE);
+            authActionBtn.setVisibility(View.GONE);
         }
     }
 
@@ -154,6 +163,53 @@ public class SettingsFragment extends Fragment {
                     } else {
                         UiNotifier.error(getContext(), "Authentication failed");
                     }
+                }
+            });
+        });
+
+        dialog.show();
+    }
+
+    private void showCreatePasswordDialog(FirebaseUser user, TextView authActionBtn) {
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_create_password, null);
+        dialog.setContentView(dialogView);
+
+        TextInputEditText inputNew = dialogView.findViewById(R.id.input_new_password);
+        TextInputEditText inputConfirm = dialogView.findViewById(R.id.input_confirm_password);
+        TextInputLayout layoutNew = dialogView.findViewById(R.id.input_new_password_layout);
+        TextInputLayout layoutConfirm = dialogView.findViewById(R.id.input_confirm_password_layout);
+
+        MaterialButton buttonCancel = dialogView.findViewById(R.id.button_cancel_create);
+        MaterialButton buttonSave = dialogView.findViewById(R.id.button_save_create);
+
+        buttonCancel.setOnClickListener(v -> dialog.dismiss());
+        buttonSave.setOnClickListener(v -> {
+            String newPass = inputNew.getText().toString().trim();
+            String confirmPass = inputConfirm.getText().toString().trim();
+
+            boolean valid = true;
+            if (newPass.length() < 6) {
+                layoutNew.setError("Password must be at least 6 characters");
+                valid = false;
+            } else layoutNew.setError(null);
+            
+            if (!newPass.equals(confirmPass)) {
+                layoutConfirm.setError("Passwords do not match");
+                valid = false;
+            } else layoutConfirm.setError(null);
+
+            if (!valid) return;
+
+            AuthCredential credential = EmailAuthProvider.getCredential(user.getEmail(), newPass);
+            user.linkWithCredential(credential).addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    UiNotifier.success(getContext(), "Password created successfully");
+                    authActionBtn.setText("Change Password");
+                    authActionBtn.setOnClickListener(btnV -> showChangePasswordDialog(user));
+                    dialog.dismiss();
+                } else {
+                    UiNotifier.error(getContext(), "Failed to create password");
                 }
             });
         });
@@ -262,3 +318,4 @@ public class SettingsFragment extends Fragment {
         }
     }
 }
+
