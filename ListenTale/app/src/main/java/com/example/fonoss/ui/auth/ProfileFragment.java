@@ -187,6 +187,10 @@ public class ProfileFragment extends Fragment {
             Navigation.findNavController(v).navigate(R.id.action_profileFragment_to_accountInfoFragment)
         );
 
+        view.findViewById(R.id.button_downloaded).setOnClickListener(v ->
+            Navigation.findNavController(v).navigate(R.id.action_profileFragment_to_downloadedBooksFragment)
+        );
+
         view.findViewById(R.id.button_settings).setOnClickListener(v -> 
             Navigation.findNavController(v).navigate(R.id.action_profileFragment_to_settingsFragment)
         );

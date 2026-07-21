@@ -4,6 +4,7 @@ import com.example.fonoss.data.local.LocalBookStorage;
 import com.example.fonoss.manager.DownloadQueueManager;
 import com.example.fonoss.data.model.Book;
 import com.example.fonoss.data.model.Bookmark;
+import com.example.fonoss.data.model.Playlist;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -36,6 +37,7 @@ public class LibraryViewModel extends ViewModel {
     private final MutableLiveData<Map<String, Long>> bookProgressPos = new MutableLiveData<>(new HashMap<>());
     private final MutableLiveData<Map<String, Long>> bookProgressChapter = new MutableLiveData<>(new HashMap<>());
     private final MutableLiveData<List<Bookmark>> bookmarks = new MutableLiveData<>(new ArrayList<>());
+    private final MutableLiveData<List<Playlist>> playlists = new MutableLiveData<>(new ArrayList<>());
     private final Set<String> pendingDeletedDownloadIds = new HashSet<>();
 
     private final UserRepository userRepository;
@@ -58,6 +60,7 @@ public class LibraryViewModel extends ViewModel {
     public LiveData<Map<String, Long>> getBookProgressPos() { return bookProgressPos; }
     public LiveData<Map<String, Long>> getBookProgressChapter() { return bookProgressChapter; }
     public LiveData<List<Bookmark>> getBookmarks() { return bookmarks; }
+    public LiveData<List<Playlist>> getPlaylists() { return playlists; }
     public LiveData<Map<String, Integer>> getDownloadProgress() {
         return DownloadQueueManager.getInstance(mAuth.getApp().getApplicationContext()).getProgressMap();
     }
@@ -82,6 +85,22 @@ public class LibraryViewModel extends ViewModel {
                         if (chapterObj instanceof Map) bookProgressChapter.postValue((Map<String, Long>) chapterObj);
 
                         autoSyncDownloads(newlyDownloaded);
+                    }
+                });
+
+        db.collection("users").document(user.getUid())
+                .collection("playlists")
+                .addSnapshotListener(executor, (snapshot, e) -> {
+                    if (snapshot != null) {
+                        List<Playlist> list = new ArrayList<>();
+                        for (com.google.firebase.firestore.DocumentSnapshot doc : snapshot.getDocuments()) {
+                            Playlist p = doc.toObject(Playlist.class);
+                            if (p != null) {
+                                p.setId(doc.getId());
+                                list.add(p);
+                            }
+                        }
+                        playlists.postValue(list);
                     }
                 });
     }
@@ -284,6 +303,63 @@ public class LibraryViewModel extends ViewModel {
                 .collection("bookmarks")
                 .document(bookmarkId)
                 .delete();
+    }
+
+    public void createPlaylist(String name) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null || name == null || name.trim().isEmpty()) return;
+
+        Playlist playlist = new Playlist(null, name);
+        db.collection("users").document(user.getUid())
+                .collection("playlists")
+                .add(playlist);
+    }
+
+    public void deletePlaylist(String playlistId) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null || playlistId == null) return;
+
+        db.collection("users").document(user.getUid())
+                .collection("playlists")
+                .document(playlistId)
+                .delete();
+    }
+
+    public void updatePlaylistName(String playlistId, String newName) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null || playlistId == null || newName == null) return;
+
+        db.collection("users").document(user.getUid())
+                .collection("playlists")
+                .document(playlistId)
+                .update("name", newName);
+    }
+
+    public void addBooksToPlaylist(String playlistId, List<Book> books) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null || playlistId == null || books == null || books.isEmpty()) return;
+
+        List<Map<String, Object>> bookMaps = new ArrayList<>();
+        for (Book book : books) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", book.getId());
+            map.put("title", book.getTitle());
+            map.put("author", book.getAuthor());
+            map.put("genre", book.getGenre());
+            map.put("genres", book.getGenres());
+            map.put("description", book.getDescription());
+            map.put("duration", book.getDuration());
+            map.put("pages", book.getPages());
+            map.put("rating", book.getRating());
+            map.put("coverUrl", book.getCoverUrl());
+            map.put("series", book.getSeries());
+            bookMaps.add(map);
+        }
+
+        db.collection("users").document(user.getUid())
+                .collection("playlists")
+                .document(playlistId)
+                .update("books", FieldValue.arrayUnion(bookMaps.toArray()));
     }
 
     private void upsertLocalBookmark(Bookmark bookmark) {

@@ -4,15 +4,19 @@ import com.example.fonoss.R;
 import dagger.hilt.android.AndroidEntryPoint;
 
 import com.example.fonoss.utils.UiNotifier;
-import com.example.fonoss.adapter.BookAdapter;
 import com.example.fonoss.ui.library.LibraryViewModel;
+import com.example.fonoss.adapter.BookAdapter;
+import com.example.fonoss.adapter.PlaylistSelectionAdapter;
 import com.example.fonoss.data.model.Book;
+import com.example.fonoss.data.model.Playlist;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,6 +24,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -28,10 +33,12 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.bumptech.glide.Glide;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -44,7 +51,7 @@ public class BookDetailFragment extends Fragment {
     private View buttonListen, buttonRead;
     private ProgressBar progressDownload;
     private View relatedBooksSection;
-    private final List<Book> relatedBooks = new ArrayList<>();
+    private List<Book> relatedBooks = new ArrayList<>();
     private BookAdapter relatedBooksAdapter;
 
     @Nullable
@@ -60,35 +67,31 @@ public class BookDetailFragment extends Fragment {
         libraryViewModel = new ViewModelProvider(requireActivity()).get(LibraryViewModel.class);
         buttonFavorite = view.findViewById(R.id.button_favorite);
         buttonDownload = view.findViewById(R.id.button_download);
+        View buttonAddToPlaylist = view.findViewById(R.id.button_add_to_playlist);
         buttonListen = view.findViewById(R.id.button_listen);
         buttonRead = view.findViewById(R.id.button_read);
         progressDownload = view.findViewById(R.id.progress_download);
         relatedBooksSection = view.findViewById(R.id.section_related_books);
-        setupRelatedBooks(view);
 
         if (getArguments() != null) {
             currentBook = (Book) getArguments().getSerializable("book");
             if (currentBook != null) {
                 bindBookDetails(view);
-                // Náº¿u chÆ°a cÃ³ chapters vÃ  Ä‘Ã£ táº£i vá» mÃ¡y, náº¡p thÃªm dá»¯ liá»‡u tá»« mÃ¡y ngáº§m
-                if (currentBook.getChapters() == null || currentBook.getChapters().isEmpty()) {
-                    Book localBook = libraryViewModel.loadBookLocally(currentBook.getId());
-                    if (localBook != null) currentBook.setChapters(localBook.getChapters());
-                }
+                setupRelatedBooks(view);
                 fetchRelatedBooks();
             }
         }
 
-        // Láº¯ng nghe thay Ä‘á»•i tá»« Database Ä‘á»ƒ cáº­p nháº­t UI ngay láº­p tá»©c
+        // Lắng nghe thay đổi từ Database để cập nhật UI ngay lập tức
         libraryViewModel.getSavedBooks().observe(getViewLifecycleOwner(), books -> updateFavoriteUI());
         libraryViewModel.getDownloadedBooks().observe(getViewLifecycleOwner(), books -> {
             updateDownloadUI();
             checkOfflineAvailability();
         });
 
-        if (currentBook != null) observeDownloadStatus(currentBook.getId());
-
         buttonFavorite.setOnClickListener(v -> { if (currentBook != null) libraryViewModel.toggleFavorite(currentBook); });
+
+        buttonAddToPlaylist.setOnClickListener(v -> showPlaylistSelectionDialog());
 
         buttonDownload.setOnClickListener(v -> {
             if (currentBook != null) {
@@ -106,7 +109,7 @@ public class BookDetailFragment extends Fragment {
                 bundle.putSerializable("book", currentBook);
                 Navigation.findNavController(v).navigate(R.id.action_bookDetailFragment_to_audioPlayerFragment, bundle);
             } else {
-                UiNotifier.warning(getContext(), "Connect to internet to listen");
+                UiNotifier.info(getContext(), "Connect to internet to listen to this book");
             }
         });
 
@@ -117,7 +120,7 @@ public class BookDetailFragment extends Fragment {
                 bundle.putSerializable("book", currentBook);
                 Navigation.findNavController(v).navigate(R.id.action_bookDetailFragment_to_ebookReaderFragment, bundle);
             } else {
-                UiNotifier.warning(getContext(), "Connect to internet to read");
+                UiNotifier.info(getContext(), "Connect to internet to read this book");
             }
         });
 
@@ -125,64 +128,55 @@ public class BookDetailFragment extends Fragment {
     }
 
     private void setupRelatedBooks(View view) {
-        RecyclerView recyclerRelatedBooks = view.findViewById(R.id.recycler_related_books);
-        recyclerRelatedBooks.setLayoutManager(
-                new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
+        RecyclerView recyclerView = view.findViewById(R.id.recycler_related_books);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         relatedBooksAdapter = new BookAdapter(relatedBooks, book -> {
             Bundle bundle = new Bundle();
             bundle.putSerializable("book", book);
-            Navigation.findNavController(view).navigate(
-                    R.id.action_bookDetailFragment_to_bookDetailFragment, bundle);
+            Navigation.findNavController(view).navigate(R.id.action_bookDetailFragment_to_bookDetailFragment, bundle);
         });
-        recyclerRelatedBooks.setAdapter(relatedBooksAdapter);
+        recyclerView.setAdapter(relatedBooksAdapter);
     }
 
     private void fetchRelatedBooks() {
-        if (currentBook == null) return;
+        if (currentBook == null || currentBook.getGenre() == null) return;
+        
+        String currentGenre = currentBook.getGenre().toLowerCase();
+        String currentSeries = currentBook.getSeries() != null ? normalizeSeries(currentBook.getSeries()) : null;
 
-        FirebaseFirestore.getInstance().collection("books").get()
-                .addOnSuccessListener(querySnapshot -> {
-                    if (!isAdded()) return;
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("books")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Book> list = new ArrayList<>();
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : queryDocumentSnapshots) {
+                        Book book = doc.toObject(Book.class);
+                        if (book != null) {
+                            book.setId(doc.getId());
+                            // Skip same book
+                            if (book.getId().equals(currentBook.getId())) continue;
 
-                    String currentSeries = normalizeSeries(currentBook.getSeries());
-                    String currentTitle = normalizeSeries(currentBook.getTitle());
-                    relatedBooks.clear();
+                            boolean isRelated = false;
+                            if (book.getGenre() != null && book.getGenre().toLowerCase().contains(currentGenre)) {
+                                isRelated = true;
+                            } else if (currentSeries != null && book.getSeries() != null && normalizeSeries(book.getSeries()).equals(currentSeries)) {
+                                isRelated = true;
+                            }
 
-                    for (QueryDocumentSnapshot document : querySnapshot) {
-                        Book book = null;
-                        try {
-                            book = document.toObject(Book.class);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        if (book == null) continue;
-                        book.setId(document.getId());
-
-                        if (currentBook.getId() != null
-                                && currentBook.getId().equals(book.getId())) {
-                            continue;
-                        }
-
-                        String candidateSeries = normalizeSeries(book.getSeries());
-                        boolean sameSeries = !currentSeries.isEmpty()
-                                && currentSeries.equals(candidateSeries);
-                        boolean titleMatchesSeries = currentSeries.isEmpty()
-                                && !candidateSeries.isEmpty()
-                                && currentTitle.contains(candidateSeries);
-
-                        if (sameSeries || titleMatchesSeries) {
-                            relatedBooks.add(book);
+                            if (isRelated) list.add(book);
                         }
                     }
-
-                    relatedBooksAdapter.notifyDataSetChanged();
-                    relatedBooksSection.setVisibility(
-                            relatedBooks.isEmpty() ? View.GONE : View.VISIBLE);
+                    if (!list.isEmpty()) {
+                        relatedBooks.clear();
+                        relatedBooks.addAll(list);
+                        relatedBooksAdapter.notifyDataSetChanged();
+                        relatedBooksSection.setVisibility(View.VISIBLE);
+                    }
                 });
     }
 
-    private String normalizeSeries(String value) {
-        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    private String normalizeSeries(String series) {
+        return series.toLowerCase().replaceAll("\\s+", "");
     }
 
     private boolean isAvailable() {
@@ -204,56 +198,49 @@ public class BookDetailFragment extends Fragment {
         return capabilities != null && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
     }
 
-
     private void bindBookDetails(View view) {
         if (currentBook == null) return;
         ((TextView)view.findViewById(R.id.text_book_title)).setText(currentBook.getTitle());
         ((TextView)view.findViewById(R.id.text_author)).setText(String.format("by %s", currentBook.getAuthor()));
-        ((TextView)view.findViewById(R.id.text_book_rating)).setText(String.format(java.util.Locale.getDefault(), "%.1f", currentBook.getRating()));
+        ((TextView)view.findViewById(R.id.text_book_rating)).setText(String.format(Locale.getDefault(), "%.1f", currentBook.getRating()));
         ((TextView)view.findViewById(R.id.text_audio_duration)).setText(currentBook.getDuration());
         ((TextView)view.findViewById(R.id.text_ebook_pages)).setText(currentBook.getPages());
-        
-        TextView genreText = view.findViewById(R.id.text_book_genre);
-        String combinedGenres = currentBook.getGenre();
-        if (currentBook.getGenres() != null && !currentBook.getGenres().isEmpty()) {
-            combinedGenres = android.text.TextUtils.join(", ", currentBook.getGenres());
-        }
-        genreText.setText(combinedGenres);
-        genreText.setSelected(true);
-        
+        ((TextView)view.findViewById(R.id.text_book_genre)).setText(currentBook.getGenre());
         ((TextView)view.findViewById(R.id.text_synopsis)).setText(currentBook.getDescription());
-        
-        com.bumptech.glide.Glide.with(this).load(currentBook.getCoverUrl()).placeholder(android.R.drawable.ic_menu_gallery).into((ImageView) view.findViewById(R.id.image_cover_bg));
+        Glide.with(this).load(currentBook.getCoverUrl()).placeholder(android.R.drawable.ic_menu_gallery).into((ImageView) view.findViewById(R.id.image_cover_bg));
         
         updateFavoriteUI();
         updateDownloadUI();
     }
 
     private void startDownload() {
-        if (currentBook != null) {
-            libraryViewModel.enqueueSequentialDownloads(java.util.Collections.singletonList(currentBook));
-            updateDownloadProgressUI(true);
-            UiNotifier.info(getContext(), "Download queued");
-        }
+        updateDownloadProgressUI(true);
+        libraryViewModel.enqueueSequentialDownloads(Collections.singletonList(currentBook));
+        observeDownloadStatus(currentBook.getId());
     }
 
     private void observeDownloadStatus(String bookId) {
         libraryViewModel.getDownloadProgress().observe(getViewLifecycleOwner(), progressMap -> {
-            Integer progress = progressMap == null ? null : progressMap.get(bookId);
-            updateDownloadProgressUI(progress != null && progress >= 0);
+            if (progressMap != null && !progressMap.containsKey(bookId)) {
+                updateDownloadProgressUI(false);
+            }
         });
     }
 
-    private void updateDownloadProgressUI(boolean isDownloading) {
-        progressDownload.setVisibility(isDownloading ? View.VISIBLE : View.GONE);
-        buttonDownload.setVisibility(isDownloading ? View.INVISIBLE : View.VISIBLE);
+    private void updateDownloadProgressUI(boolean downloading) {
+        buttonDownload.setVisibility(downloading ? View.INVISIBLE : View.VISIBLE);
+        progressDownload.setVisibility(downloading ? View.VISIBLE : View.GONE);
     }
 
     private void startDelete() {
-        if (currentBook != null) {
-            libraryViewModel.removeDownload(currentBook.getId());
-            UiNotifier.info(getContext(), "Deleted from device");
-        }
+        updateDownloadProgressUI(true);
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (currentBook != null) {
+                libraryViewModel.removeDownload(currentBook.getId());
+                updateDownloadProgressUI(false);
+                UiNotifier.success(getContext(), "Deleted from device");
+            }
+        }, 1000);
     }
 
     private void updateFavoriteUI() {
@@ -275,9 +262,33 @@ public class BookDetailFragment extends Fragment {
             buttonDownload.setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.slate_900)));
         }
     }
+
+    private void showPlaylistSelectionDialog() {
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View view = getLayoutInflater().inflate(R.layout.dialog_select_playlist, null);
+        dialog.setContentView(view);
+
+        RecyclerView recyclerView = view.findViewById(R.id.recycler_select_playlist);
+        TextView textEmpty = view.findViewById(R.id.text_no_playlists);
+
+        PlaylistSelectionAdapter adapter = new PlaylistSelectionAdapter(playlist -> {
+            libraryViewModel.addBooksToPlaylist(playlist.getId(), Collections.singletonList(currentBook));
+            UiNotifier.success(getContext(), "Added to " + playlist.getName());
+            dialog.dismiss();
+        });
+        recyclerView.setAdapter(adapter);
+
+        libraryViewModel.getPlaylists().observe(getViewLifecycleOwner(), playlists -> {
+            if (playlists == null || playlists.isEmpty()) {
+                textEmpty.setVisibility(View.VISIBLE);
+                recyclerView.setVisibility(View.GONE);
+            } else {
+                textEmpty.setVisibility(View.GONE);
+                recyclerView.setVisibility(View.VISIBLE);
+                adapter.updateList(playlists);
+            }
+        });
+
+        dialog.show();
+    }
 }
-
-
-
-
-
