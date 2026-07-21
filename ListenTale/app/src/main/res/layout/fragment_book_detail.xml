@@ -40,36 +40,52 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
-            android:orientation="horizontal">
+            android:orientation="vertical"
+            android:gravity="end">
 
-            <FrameLayout
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_marginEnd="8dp">
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="12dp">
+
+                <FrameLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="8dp">
+
+                    <ImageButton
+                        android:id="@+id/button_download"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_circle_white_alpha"
+                        android:src="@drawable/ic_detail_download"
+                        app:tint="@color/slate_900" />
+
+                    <ProgressBar
+                        android:id="@+id/progress_download"
+                        style="?android:attr/progressBarStyleSmall"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:visibility="gone" />
+                </FrameLayout>
 
                 <ImageButton
-                    android:id="@+id/button_download"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:id="@+id/button_favorite"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:background="@drawable/bg_circle_white_alpha"
-                    android:src="@drawable/ic_detail_download"
+                    android:src="@drawable/ic_detail_heart"
                     app:tint="@color/slate_900" />
-
-                <ProgressBar
-                    android:id="@+id/progress_download"
-                    style="?android:attr/progressBarStyleSmall"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_gravity="center"
-                    android:visibility="gone" />
-            </FrameLayout>
+            </LinearLayout>
 
             <ImageButton
-                android:id="@+id/button_favorite"
+                android:id="@+id/button_add_to_playlist"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:background="@drawable/bg_circle_white_alpha"
-                android:src="@drawable/ic_detail_heart"
+                android:src="@android:drawable/ic_input_add"
                 app:tint="@color/slate_900" />
         </LinearLayout>
     </LinearLayout>

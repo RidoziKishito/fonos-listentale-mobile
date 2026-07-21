@@ -35,7 +35,8 @@ public class MainActivity extends AppCompatActivity {
                     || id == R.id.welcomeFragment
                     || id == R.id.audioPlayerFragment
                     || id == R.id.bookDetailFragment
-                    || id == R.id.ebookReaderFragment) {
+                    || id == R.id.ebookReaderFragment
+                    || id == R.id.downloadedBooksFragment) {
                 navView.setVisibility(View.GONE);
             } else {
                 navView.setVisibility(View.VISIBLE);

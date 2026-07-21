@@ -113,6 +113,25 @@
         <action
             android:id="@+id/action_libraryFragment_to_ebookReaderFragment"
             app:destination="@id/ebookReaderFragment" />
+        <action
+            android:id="@+id/action_libraryFragment_to_playlistDetailFragment"
+            app:destination="@id/playlistDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/playlistDetailFragment"
+        android:name="com.example.fonoss.ui.library.PlaylistDetailFragment"
+        android:label="Playlist Detail"
+        tools:layout="@layout/fragment_playlist_detail">
+        <action
+            android:id="@+id/action_playlistDetailFragment_to_bookDetailFragment"
+            app:destination="@id/bookDetailFragment" />
+        <action
+            android:id="@+id/action_playlistDetailFragment_to_audioPlayerFragment"
+            app:destination="@id/audioPlayerFragment" />
+        <action
+            android:id="@+id/action_playlistDetailFragment_to_ebookReaderFragment"
+            app:destination="@id/ebookReaderFragment" />
     </fragment>
 
     <fragment
@@ -126,6 +145,25 @@
         <action
             android:id="@+id/action_profileFragment_to_settingsFragment"
             app:destination="@id/settingsFragment" />
+        <action
+            android:id="@+id/action_profileFragment_to_downloadedBooksFragment"
+            app:destination="@id/downloadedBooksFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/downloadedBooksFragment"
+        android:name="com.example.fonoss.ui.auth.DownloadedBooksFragment"
+        android:label="Downloaded Books"
+        tools:layout="@layout/fragment_downloaded_books">
+        <action
+            android:id="@+id/action_downloadedBooksFragment_to_bookDetailFragment"
+            app:destination="@id/bookDetailFragment" />
+        <action
+            android:id="@+id/action_downloadedBooksFragment_to_audioPlayerFragment"
+            app:destination="@id/audioPlayerFragment" />
+        <action
+            android:id="@+id/action_downloadedBooksFragment_to_ebookReaderFragment"
+            app:destination="@id/ebookReaderFragment" />
     </fragment>
 
     <fragment

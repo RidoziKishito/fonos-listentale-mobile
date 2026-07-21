@@ -5,7 +5,9 @@ import dagger.hilt.android.AndroidEntryPoint;
 
 import com.example.fonoss.utils.UiNotifier;
 import com.example.fonoss.adapter.BookAdapter;
+import com.example.fonoss.adapter.PlaylistAdapter;
 import com.example.fonoss.data.model.Book;
+import com.example.fonoss.data.model.Playlist;
 
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -14,11 +16,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
@@ -36,14 +40,17 @@ public class LibraryFragment extends Fragment {
 
     private LibraryViewModel libraryViewModel;
     private BookAdapter adapter;
+    private PlaylistAdapter playlistAdapter;
     private List<Book> currentList = new ArrayList<>();
     private int currentTabPosition = 0;
     private final TextView[] tabButtons = new TextView[4];
     private final Map<Integer, Set<String>> selectionsByTab = new HashMap<>();
     private boolean isSelectionMode = false;
     private TextView buttonToggleSelect;
+    private ImageButton buttonAddPlaylist;
     private View layoutSelectionControls;
     private CheckBox checkboxSelectAll;
+    private RecyclerView recyclerView;
 
     @Nullable
     @Override
@@ -59,10 +66,11 @@ public class LibraryFragment extends Fragment {
         libraryViewModel = new ViewModelProvider(requireActivity()).get(LibraryViewModel.class);
         libraryViewModel.fetchLibraryData();
         
-        RecyclerView recyclerView = view.findViewById(R.id.recycler_library);
+        recyclerView = view.findViewById(R.id.recycler_library);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         
         buttonToggleSelect = view.findViewById(R.id.button_toggle_select);
+        buttonAddPlaylist = view.findViewById(R.id.button_add_playlist);
         layoutSelectionControls = view.findViewById(R.id.layout_selection_controls);
         checkboxSelectAll = view.findViewById(R.id.checkbox_select_all);
         View buttonDelete = view.findViewById(R.id.button_delete_selected);
@@ -95,10 +103,25 @@ public class LibraryFragment extends Fragment {
             }
         }, true);
         adapter.setSelectedBookIds(selectionsByTab.get(0));
+
+        playlistAdapter = new PlaylistAdapter(new PlaylistAdapter.OnPlaylistClickListener() {
+            @Override
+            public void onPlaylistClick(Playlist playlist) {
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("playlist", playlist);
+                Navigation.findNavController(view).navigate(R.id.action_libraryFragment_to_playlistDetailFragment, bundle);
+            }
+
+            @Override
+            public void onMoreClick(Playlist playlist, View anchor) {
+                showPlaylistMenu(playlist, anchor);
+            }
+        });
         
         recyclerView.setAdapter(adapter);
 
         buttonToggleSelect.setOnClickListener(v -> toggleSelectionMode());
+        buttonAddPlaylist.setOnClickListener(v -> showCreatePlaylistDialog());
         checkboxSelectAll.setOnClickListener(v -> toggleSelectAll());
         buttonDelete.setOnClickListener(v -> showDeleteConfirmation());
 
@@ -114,7 +137,7 @@ public class LibraryFragment extends Fragment {
         // Observe all lists for real-time updates from Firebase
         libraryViewModel.getSavedBooks().observe(getViewLifecycleOwner(), books -> { if (currentTabPosition == 0) updateListForTab(0); });
         libraryViewModel.getInProgressBooks().observe(getViewLifecycleOwner(), books -> { if (currentTabPosition == 1) updateListForTab(1); });
-        libraryViewModel.getDownloadedBooks().observe(getViewLifecycleOwner(), books -> { if (currentTabPosition == 2) updateListForTab(2); });
+        libraryViewModel.getPlaylists().observe(getViewLifecycleOwner(), playlists -> { if (currentTabPosition == 2) playlistAdapter.updateList(playlists); });
         libraryViewModel.getCompletedBooks().observe(getViewLifecycleOwner(), books -> { if (currentTabPosition == 3) updateListForTab(3); });
 
         selectTab(0);
@@ -204,10 +227,21 @@ public class LibraryFragment extends Fragment {
     }
 
     private void updateListForTab(int position) {
+        if (position == 2) {
+            recyclerView.setAdapter(playlistAdapter);
+            buttonAddPlaylist.setVisibility(View.VISIBLE);
+            buttonToggleSelect.setVisibility(View.GONE);
+            playlistAdapter.updateList(libraryViewModel.getPlaylists().getValue());
+            return;
+        }
+
+        recyclerView.setAdapter(adapter);
+        buttonAddPlaylist.setVisibility(View.GONE);
+        buttonToggleSelect.setVisibility(View.VISIBLE);
+
         List<Book> list;
         switch (position) {
             case 1: list = libraryViewModel.getInProgressBooks().getValue(); break;
-            case 2: list = libraryViewModel.getDownloadedBooks().getValue(); break;
             case 3: list = libraryViewModel.getCompletedBooks().getValue(); break;
             default: list = libraryViewModel.getSavedBooks().getValue(); break;
         }
@@ -218,6 +252,52 @@ public class LibraryFragment extends Fragment {
         adapter.updateList(currentList);
 
         if (isSelectionMode) updateSelectAllState();
+    }
+
+    private void showCreatePlaylistDialog() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_text, null);
+        EditText input = dialogView.findViewById(R.id.input_dialog_text);
+        TextView title = dialogView.findViewById(R.id.text_dialog_title);
+        title.setText("Create New Playlist");
+        input.setHint("Enter playlist name");
+
+        new AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .setPositiveButton("Create", (dialog, which) -> {
+                    String name = input.getText().toString().trim();
+                    if (!name.isEmpty()) libraryViewModel.createPlaylist(name);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void showPlaylistMenu(Playlist playlist, View anchor) {
+        PopupMenu popup = new PopupMenu(requireContext(), anchor);
+        popup.getMenu().add("Rename");
+        popup.getMenu().add("Delete");
+        popup.setOnMenuItemClickListener(item -> {
+            if (item.getTitle().equals("Rename")) showRenamePlaylistDialog(playlist);
+            else if (item.getTitle().equals("Delete")) libraryViewModel.deletePlaylist(playlist.getId());
+            return true;
+        });
+        popup.show();
+    }
+
+    private void showRenamePlaylistDialog(Playlist playlist) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_text, null);
+        EditText input = dialogView.findViewById(R.id.input_dialog_text);
+        TextView title = dialogView.findViewById(R.id.text_dialog_title);
+        title.setText("Rename Playlist");
+        input.setText(playlist.getName());
+
+        new AlertDialog.Builder(requireContext())
+                .setView(dialogView)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String name = input.getText().toString().trim();
+                    if (!name.isEmpty()) libraryViewModel.updatePlaylistName(playlist.getId(), name);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void selectTab(int position) {
