@@ -181,6 +181,14 @@ public class AudioService extends Service {
                             .setUsage(AudioAttributes.USAGE_MEDIA)
                             .build()
                     );
+                    mediaPlayer.setOnErrorListener((mp, what, extra) -> {
+                        android.util.Log.e("AudioService", "MediaPlayer Error: " + what + ", " + extra);
+                        new Handler(Looper.getMainLooper()).post(() -> 
+                            Toast.makeText(getApplicationContext(), "Playback error: " + what, Toast.LENGTH_SHORT).show());
+                        isPlaying = false;
+                        updatePlaybackState();
+                        return true;
+                    });
                     mediaPlayer.setDataSource(dataSource);
                     mediaPlayer.setOnPreparedListener(mp -> {
                         totalDuration = mp.getDuration() / 1000;
@@ -199,7 +207,10 @@ public class AudioService extends Service {
                     mediaPlayer.prepareAsync();
                 } catch (Exception e) {
                     e.printStackTrace();
+                    Toast.makeText(this, "Failed to initialize player", Toast.LENGTH_SHORT).show();
                 }
+            } else {
+                Toast.makeText(this, "Audio link not found for this book", Toast.LENGTH_SHORT).show();
             }
         } else {
             play();
@@ -229,7 +240,11 @@ public class AudioService extends Service {
     public void pause() {
         if (currentBook == null || mediaPlayer == null) return;
         isPlaying = false;
-        if (mediaPlayer.isPlaying()) mediaPlayer.pause();
+        try {
+            if (mediaPlayer.isPlaying()) mediaPlayer.pause();
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+        }
         handler.removeCallbacks(progressRunnable);
         updatePlaybackState();
 

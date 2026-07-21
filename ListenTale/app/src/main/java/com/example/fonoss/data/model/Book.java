@@ -89,6 +89,19 @@ public class Book implements Serializable {
     public String getAudio_link() { return audio_link; }
     public void setAudio_link(String audio_link) { this.audio_link = audio_link; }
 
+    @com.google.firebase.firestore.PropertyName("audio_url")
+    public void setLegacyAudioUrl(String audio_url) { setAudioLinkIfMissing(audio_url); }
+
+    @com.google.firebase.firestore.PropertyName("audioUrl")
+    public void setLegacyAudioUrlCamelCase(String audioUrl) { setAudioLinkIfMissing(audioUrl); }
+
+    private void setAudioLinkIfMissing(String value) {
+        if ((audio_link == null || audio_link.trim().isEmpty())
+                && value != null && !value.trim().isEmpty()) {
+            audio_link = value.trim();
+        }
+    }
+
     public long getViews() { return views; }
     public void setViews(long views) { this.views = views; }
 

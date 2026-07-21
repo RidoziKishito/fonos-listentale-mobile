@@ -8,12 +8,14 @@ import com.example.fonoss.ui.library.LibraryViewModel;
 
 import android.Manifest;
 import android.app.NotificationManager;
+import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Patterns;
+import java.util.Locale;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +30,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.example.fonoss.utils.NotificationHelper;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -43,11 +46,14 @@ import com.google.firebase.auth.UserInfo;
 public class SettingsFragment extends Fragment {
     private static final String PREFS_NAME = "settings";
     private static final String KEY_PUSH_NOTIFICATIONS = "push_notifications";
+    private static final String KEY_REMINDER_HOUR = "reminder_hour";
+    private static final String KEY_REMINDER_MINUTE = "reminder_minute";
     private static final int NOTIFICATION_PERMISSION_CODE = 2002;
 
     private LibraryViewModel libraryViewModel;
     private SharedPreferences preferences;
     private SwitchMaterial switchPushNotifications;
+    private TextView textReminderTime;
 
     @Nullable
     @Override
@@ -61,12 +67,14 @@ public class SettingsFragment extends Fragment {
         libraryViewModel = new ViewModelProvider(requireActivity()).get(LibraryViewModel.class);
         preferences = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         switchPushNotifications = view.findViewById(R.id.switch_push_notifications);
+        textReminderTime = view.findViewById(R.id.text_notification_time);
 
         view.findViewById(R.id.button_back).setOnClickListener(v -> 
             Navigation.findNavController(v).navigateUp()
         );
 
         setupPushNotifications();
+        setupReminderTime(view);
         view.findViewById(R.id.button_clear_data).setOnClickListener(v -> showClearDataWarning());
         view.findViewById(R.id.button_about_app).setOnClickListener(v -> showAboutDialog());
 
@@ -255,6 +263,9 @@ public class SettingsFragment extends Fragment {
     private void setupPushNotifications() {
         boolean enabled = preferences.getBoolean(KEY_PUSH_NOTIFICATIONS, true);
         switchPushNotifications.setChecked(enabled && hasNotificationPermission());
+        
+        NotificationHelper.createNotificationChannel(requireContext());
+
         switchPushNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked && !hasNotificationPermission()) {
                 requestNotificationPermission();
@@ -265,11 +276,41 @@ public class SettingsFragment extends Fragment {
                 NotificationManager manager = (NotificationManager) requireContext()
                         .getSystemService(Context.NOTIFICATION_SERVICE);
                 if (manager != null) manager.cancelAll();
+                NotificationHelper.cancelReminder(requireContext());
                 UiNotifier.info(getContext(), "Notifications turned off");
             } else {
+                updateReminderSchedule();
                 UiNotifier.info(getContext(), "Notifications turned on");
             }
         });
+    }
+
+    private void setupReminderTime(View view) {
+        int hour = preferences.getInt(KEY_REMINDER_HOUR, 8);
+        int minute = preferences.getInt(KEY_REMINDER_MINUTE, 0);
+        textReminderTime.setText(String.format(Locale.getDefault(), "%02d:%02d", hour, minute));
+
+        view.findViewById(R.id.layout_notification_time).setOnClickListener(v -> {
+            int currentHour = preferences.getInt(KEY_REMINDER_HOUR, 8);
+            int currentMin = preferences.getInt(KEY_REMINDER_MINUTE, 0);
+
+            new TimePickerDialog(requireContext(), (view1, h, m) -> {
+                preferences.edit()
+                        .putInt(KEY_REMINDER_HOUR, h)
+                        .putInt(KEY_REMINDER_MINUTE, m)
+                        .apply();
+                textReminderTime.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m));
+                if (switchPushNotifications.isChecked()) {
+                    updateReminderSchedule();
+                }
+            }, currentHour, currentMin, true).show();
+        });
+    }
+
+    private void updateReminderSchedule() {
+        int h = preferences.getInt(KEY_REMINDER_HOUR, 8);
+        int m = preferences.getInt(KEY_REMINDER_MINUTE, 0);
+        NotificationHelper.scheduleDailyReminder(requireContext(), h, m);
     }
 
     private boolean hasNotificationPermission() {

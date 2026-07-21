@@ -18,6 +18,7 @@
         android:layout_height="match_parent"
         android:background="@drawable/gradient_player_overlay" />
 
+    <!-- Header -->
     <ImageButton
         android:id="@+id/button_player_back"
         android:layout_width="48dp"
@@ -41,6 +42,33 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/button_player_back" />
 
+    <FrameLayout
+        android:id="@+id/layout_timer_header"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_margin="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+        <ImageButton
+            android:id="@+id/button_player_timer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_lock_idle_alarm"
+            app:tint="@color/white" />
+        <TextView
+            android:id="@+id/text_timer_countdown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:background="@color/violet_600"
+            android:textColor="@color/white"
+            android:textSize="10sp"
+            android:paddingHorizontal="4dp"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <!-- Artwork -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/card_artwork"
         android:layout_width="0dp"
@@ -63,9 +91,10 @@
             android:src="@android:drawable/ic_menu_gallery" />
     </com.google.android.material.card.MaterialCardView>
 
+    <!-- Info -->
     <TextView
         android:id="@+id/text_player_title"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
         android:fontFamily="sans-serif-black"
@@ -74,8 +103,6 @@
         android:textSize="24sp"
         android:paddingHorizontal="24dp"
         android:gravity="center"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/card_artwork" />
 
     <TextView
@@ -90,16 +117,43 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/text_player_title" />
 
+    <LinearLayout
+        android:id="@+id/layout_speed_control"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center"
+        android:background="@drawable/bg_speed_pill"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="4dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/text_player_author">
+
+        <TextView
+            android:id="@+id/text_current_speed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1.0x"
+            android:textColor="@color/slate_400"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Progress -->
     <com.google.android.material.slider.Slider
         android:id="@+id/player_slider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="32dp"
         android:layout_marginTop="32dp"
-        android:value="35"
+        android:value="0"
         android:valueFrom="0"
         android:valueTo="100"
-        app:layout_constraintTop_toBottomOf="@id/text_player_author"
+        app:layout_constraintTop_toBottomOf="@id/layout_speed_control"
         app:thumbColor="@color/white"
         app:trackColorActive="@color/violet_500"
         app:trackColorInactive="#33FFFFFF" />
@@ -120,12 +174,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="45:20"
+        android:text="00:00"
         android:textColor="@color/slate_400"
         android:textSize="12sp"
         app:layout_constraintEnd_toEndOf="@id/player_slider"
         app:layout_constraintTop_toBottomOf="@id/player_slider" />
 
+    <!-- Controls -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -134,86 +189,89 @@
         android:paddingHorizontal="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/player_slider"
-        app:layout_constraintVertical_bias="0.4">
+        app:layout_constraintVertical_bias="0.5">
 
-        <!-- Vùng Đồng hồ: Chiếm không gian bên trái -->
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_weight="1">
-            <ImageButton
-                android:id="@+id/button_player_timer"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_gravity="center"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_lock_idle_alarm"
-                app:tint="@color/slate_400" />
-            <TextView
-                android:id="@+id/text_timer_countdown"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:textColor="@color/violet_500"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:visibility="gone" />
-        </FrameLayout>
-
-        <!-- Nhóm nút chính: Luôn ở giữa -->
         <ImageButton
             android:id="@+id/button_player_prev"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:scaleType="fitCenter"
             android:src="@android:drawable/ic_media_previous"
             app:tint="@color/white" />
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_play_pause"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="16dp"
-            android:src="@android:drawable/ic_media_play"
-            app:backgroundTint="@color/violet_500"
-            app:fabCustomSize="80dp"
-            app:maxImageSize="40dp"
-            app:tint="@color/white" />
-
-        <ImageButton
-            android:id="@+id/button_player_next"
+        <FrameLayout
+            android:id="@+id/button_player_rewind_15"
             android:layout_width="56dp"
             android:layout_height="56dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:scaleType="fitCenter"
-            android:src="@android:drawable/ic_media_next"
-            app:tint="@color/white" />
-
-        <!-- Vùng Tốc độ: Chiếm không gian bên phải -->
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_weight="1">
-            <ImageButton
-                android:id="@+id/button_player_speed"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_gravity="center"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_slideshow"
-                app:tint="@color/slate_400" />
+            android:layout_marginHorizontal="12dp"
+            android:background="?attr/selectableItemBackgroundBorderless">
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="8dp"
+                android:src="@android:drawable/ic_media_rew"
+                app:tint="@color/white" />
             <TextView
-                android:id="@+id/text_current_speed"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="1.0x"
-                android:textColor="@color/slate_400"
-                android:textSize="12sp"
+                android:text="15"
+                android:textColor="@color/white"
+                android:textSize="10sp"
                 android:textStyle="bold"
-                android:visibility="gone"/>
+                android:clickable="false" />
         </FrameLayout>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/button_play_container"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginHorizontal="16dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="40dp"
+            app:cardElevation="8dp"
+            app:strokeWidth="0dp">
+            <ImageButton
+                android:id="@+id/fab_play_pause"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@null"
+                android:scaleType="centerInside"
+                android:src="@android:drawable/ic_media_play"
+                app:tint="@color/slate_900" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <FrameLayout
+            android:id="@+id/button_player_forward_30"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginHorizontal="12dp"
+            android:background="?attr/selectableItemBackgroundBorderless">
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="8dp"
+                android:src="@android:drawable/ic_media_ff"
+                app:tint="@color/white" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="30"
+                android:textColor="@color/white"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:clickable="false" />
+        </FrameLayout>
+
+        <ImageButton
+            android:id="@+id/button_player_next"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_media_next"
+            app:tint="@color/white" />
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
