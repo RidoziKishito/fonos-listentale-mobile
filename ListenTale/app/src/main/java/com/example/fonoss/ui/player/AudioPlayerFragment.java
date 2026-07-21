@@ -40,12 +40,12 @@ import java.util.Map;
 @AndroidEntryPoint
 public class AudioPlayerFragment extends Fragment {
 
-    private FloatingActionButton fabPlayPause;
+    private ImageButton fabPlayPause;
     private Slider playerSlider;
     private TextView textCurrentTime, textTotalTime, textTimerCountdown, textCurrentSpeed;
     private TextView textPlayerTitle, textPlayerAuthor;
     private ImageView imagePlayerArtwork, imagePlayerBg;
-    private ImageButton buttonTimer, buttonSpeed;
+    private ImageButton buttonTimer;
     
     private AudioService audioService;
     private boolean isBound = false;
@@ -142,7 +142,6 @@ public class AudioPlayerFragment extends Fragment {
         playerSlider = view.findViewById(R.id.player_slider);
         textCurrentTime = view.findViewById(R.id.text_player_current_time);
         textTotalTime = view.findViewById(R.id.text_player_total_time);
-        buttonSpeed = view.findViewById(R.id.button_player_speed);
         buttonTimer = view.findViewById(R.id.button_player_timer);
         textTimerCountdown = view.findViewById(R.id.text_timer_countdown);
         textCurrentSpeed = view.findViewById(R.id.text_current_speed);
@@ -153,13 +152,24 @@ public class AudioPlayerFragment extends Fragment {
 
         view.findViewById(R.id.button_player_back).setOnClickListener(v -> Navigation.findNavController(v).navigateUp());
         fabPlayPause.setOnClickListener(v -> togglePlay());
+        view.findViewById(R.id.button_player_rewind_15).setOnClickListener(v -> seekBySeconds(-15));
+        view.findViewById(R.id.button_player_forward_30).setOnClickListener(v -> seekBySeconds(30));
+        
+        view.findViewById(R.id.button_player_prev).setOnClickListener(v -> {
+            android.widget.Toast.makeText(getContext(), "Previous book (Coming soon)", android.widget.Toast.LENGTH_SHORT).show();
+        });
+        
+        view.findViewById(R.id.button_player_next).setOnClickListener(v -> {
+            android.widget.Toast.makeText(getContext(), "Next book (Coming soon)", android.widget.Toast.LENGTH_SHORT).show();
+        });
+
         playerSlider.addOnChangeListener((slider, value, fromUser) -> {
             if (fromUser && isBound && audioService != null) {
                 audioService.seekTo((int) (value * audioService.getTotalDuration() / 100));
                 updateUI();
             }
         });
-        buttonSpeed.setOnClickListener(this::showSpeedMenu);
+        view.findViewById(R.id.layout_speed_control).setOnClickListener(this::showSpeedMenu);
         textCurrentSpeed.setOnClickListener(this::showSpeedMenu);
         buttonTimer.setOnClickListener(v -> showTimerDialog());
         textTimerCountdown.setOnClickListener(v -> showTimerDialog());
@@ -218,6 +228,21 @@ public class AudioPlayerFragment extends Fragment {
         }
     }
 
+    private void seekBySeconds(int seconds) {
+        if (!isBound || audioService == null) return;
+
+        int duration = audioService.getTotalDuration();
+        int currentPosition = audioService.getCurrentPosition();
+        int targetPosition = currentPosition + seconds;
+        if (duration > 0) {
+            targetPosition = Math.min(duration, targetPosition);
+        }
+        targetPosition = Math.max(0, targetPosition);
+
+        audioService.seekTo(targetPosition);
+        updateUI();
+    }
+
     private void showSpeedMenu(View v) {
         PopupMenu popup = new PopupMenu(getContext(), v);
         String currentSpeedStr = String.format(Locale.getDefault(), "%.1fx", (isBound && audioService != null) ? audioService.getPlaybackSpeed() : 1.0f);
@@ -236,8 +261,7 @@ public class AudioPlayerFragment extends Fragment {
     }
 
     private void updateSpeedUI(float speed) {
-        if (speed == 1.0f) { buttonSpeed.setVisibility(View.VISIBLE); textCurrentSpeed.setVisibility(View.GONE); }
-        else { buttonSpeed.setVisibility(View.GONE); textCurrentSpeed.setVisibility(View.VISIBLE); textCurrentSpeed.setText(String.format(Locale.getDefault(), "%.1fx", speed)); }
+        textCurrentSpeed.setText(String.format(Locale.getDefault(), "%.1fx", speed));
     }
 
     private void showTimerDialog() {
