@@ -48,6 +48,16 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_sort_by_size"
             app:tint="@color/slate_900" />
+
+        <ImageButton
+            android:id="@+id/button_reader_ai_chat"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_ai_sparkles"
+            app:tint="@color/primary_600"
+            android:contentDescription="Ask AI Chat" />
     </LinearLayout>
 
     <androidx.core.widget.NestedScrollView

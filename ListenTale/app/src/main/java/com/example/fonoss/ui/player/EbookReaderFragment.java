@@ -169,6 +169,16 @@ public class EbookReaderFragment extends Fragment {
 
         view.findViewById(R.id.button_bookmarks).setOnClickListener(v -> showBookmarksDialog());
 
+        View btnAiChat = view.findViewById(R.id.button_reader_ai_chat);
+        if (btnAiChat != null) {
+            btnAiChat.setOnClickListener(v -> {
+                if (currentBook == null) return;
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("book", currentBook);
+                Navigation.findNavController(v).navigate(R.id.action_ebookReaderFragment_to_chatFragment, bundle);
+            });
+        }
+
         setupTextSelection();
 
         view.findViewById(R.id.button_next_chapter).setOnClickListener(v -> {

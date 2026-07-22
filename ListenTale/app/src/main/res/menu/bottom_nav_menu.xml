@@ -9,6 +9,10 @@
         android:icon="@drawable/ic_nav_search"
         android:title="Search" />
     <item
+        android:id="@id/chatFragment"
+        android:icon="@drawable/ic_ai_sparkles"
+        android:title="AI Chat" />
+    <item
         android:id="@id/libraryFragment"
         android:icon="@drawable/ic_nav_library"
         android:title="Library" />

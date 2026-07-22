@@ -46,8 +46,9 @@
         android:id="@+id/layout_timer_header"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_margin="16dp"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="8dp"
+        app:layout_constraintEnd_toStartOf="@id/button_player_ai_chat"
         app:layout_constraintTop_toTopOf="parent">
         <ImageButton
             android:id="@+id/button_player_timer"
@@ -67,6 +68,18 @@
             android:paddingHorizontal="4dp"
             android:visibility="gone" />
     </FrameLayout>
+
+    <ImageButton
+        android:id="@+id/button_player_ai_chat"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_margin="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_ai_sparkles"
+        app:tint="@color/white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:contentDescription="Ask AI Chat" />
 
     <!-- Artwork -->
     <com.google.android.material.card.MaterialCardView

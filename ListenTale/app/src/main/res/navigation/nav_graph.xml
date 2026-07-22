@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -192,19 +192,35 @@
         <action
             android:id="@+id/action_bookDetailFragment_to_bookDetailFragment"
             app:destination="@id/bookDetailFragment" />
+        <action
+            android:id="@+id/action_bookDetailFragment_to_chatFragment"
+            app:destination="@id/chatFragment" />
     </fragment>
 
     <fragment
         android:id="@+id/ebookReaderFragment"
         android:name="com.example.fonoss.ui.player.EbookReaderFragment"
         android:label="Ebook Reader"
-        tools:layout="@layout/fragment_ebook_reader" />
+        tools:layout="@layout/fragment_ebook_reader">
+        <action
+            android:id="@+id/action_ebookReaderFragment_to_chatFragment"
+            app:destination="@id/chatFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/audioPlayerFragment"
         android:name="com.example.fonoss.ui.player.AudioPlayerFragment"
         android:label="Audio Player"
-        tools:layout="@layout/fragment_audio_player" />
+        tools:layout="@layout/fragment_audio_player">
+        <action
+            android:id="@+id/action_audioPlayerFragment_to_chatFragment"
+            app:destination="@id/chatFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/chatFragment"
+        android:name="com.example.fonoss.ui.chat.ChatFragment"
+        android:label="AI Chat"
+        tools:layout="@layout/fragment_chat" />
 
 </navigation>
-

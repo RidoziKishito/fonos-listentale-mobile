@@ -124,6 +124,13 @@ public class BookDetailFragment extends Fragment {
             }
         });
 
+        view.findViewById(R.id.button_ai_chat).setOnClickListener(v -> {
+            if (currentBook == null) return;
+            Bundle bundle = new Bundle();
+            bundle.putSerializable("book", currentBook);
+            Navigation.findNavController(v).navigate(R.id.action_bookDetailFragment_to_chatFragment, bundle);
+        });
+
         checkOfflineAvailability();
     }
 
