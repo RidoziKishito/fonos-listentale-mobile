@@ -173,6 +173,16 @@ public class AudioPlayerFragment extends Fragment {
         textCurrentSpeed.setOnClickListener(this::showSpeedMenu);
         buttonTimer.setOnClickListener(v -> showTimerDialog());
         textTimerCountdown.setOnClickListener(v -> showTimerDialog());
+
+        View btnAiChat = view.findViewById(R.id.button_player_ai_chat);
+        if (btnAiChat != null) {
+            btnAiChat.setOnClickListener(v -> {
+                if (currentBook == null) return;
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("book", currentBook);
+                Navigation.findNavController(v).navigate(R.id.action_audioPlayerFragment_to_chatFragment, bundle);
+            });
+        }
         
         if (currentBook != null) bindBookData();
 

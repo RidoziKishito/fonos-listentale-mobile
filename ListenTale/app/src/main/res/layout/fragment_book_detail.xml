@@ -332,7 +332,7 @@
             android:layout_width="0dp"
             android:layout_height="56dp"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
+            android:layout_marginHorizontal="6dp"
             android:backgroundTint="@color/primary_light"
             android:text="Read"
             android:textAllCaps="false"
@@ -341,6 +341,16 @@
             app:cornerRadius="16dp"
             app:icon="@android:drawable/ic_menu_agenda"
             app:iconTint="@color/primary_700" />
+
+        <ImageButton
+            android:id="@+id/button_ai_chat"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/bg_circle_white_alpha"
+            android:src="@drawable/ic_ai_sparkles"
+            app:tint="@color/primary_600"
+            android:contentDescription="Ask AI Chat" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
