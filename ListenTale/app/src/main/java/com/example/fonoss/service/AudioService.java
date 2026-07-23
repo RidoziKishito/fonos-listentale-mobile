@@ -3,6 +3,9 @@ package com.example.fonoss.service;
 import com.example.fonoss.R;
 
 import com.example.fonoss.data.model.Book;
+import com.example.fonoss.manager.QueueManager;
+import com.example.fonoss.data.recommendation.RecommendationEngine;
+import java.util.List;
 import com.example.fonoss.ui.main.MainActivity;
 
 import android.app.Notification;
@@ -40,6 +43,9 @@ public class AudioService extends Service {
     private static final int NOTIFICATION_ID = 1;
 
     private final IBinder binder = new LocalBinder();
+    private final QueueManager queueManager = new QueueManager();
+    private List<Book> cachedAllBooks = new java.util.ArrayList<>();
+    private RecommendationEngine.UserProfileContext cachedUserContext;
     private boolean isPlaying = false;
     private int currentPosition = 0;
     private int totalDuration = 0;
@@ -51,6 +57,13 @@ public class AudioService extends Service {
 
     private long playTimestamp = 0;
     private long pendingListeningSeconds = 0;
+
+    public QueueManager getQueueManager() { return queueManager; }
+
+    public void setAllBooksAndContext(List<Book> allBooks, RecommendationEngine.UserProfileContext context) {
+        if (allBooks != null && !allBooks.isEmpty()) this.cachedAllBooks = allBooks;
+        if (context != null) this.cachedUserContext = context;
+    }
 
     public synchronized void accumulateActiveListening() {
         if (isPlaying && playTimestamp > 0) {
@@ -111,10 +124,7 @@ public class AudioService extends Service {
 
                     if (isMobile && isPlaying) {
                         pause();
-                        Intent alertIntent = new Intent("com.example.fonoss.NETWORK_WARNING");
-                        alertIntent.putExtra("message", "You are using Mobile Data. Playback has been paused to prevent unexpected data costs.");
-                        alertIntent.setPackage(context.getPackageName());
-                        context.sendBroadcast(alertIntent);
+                        Toast.makeText(context, "Chuyển sang 4G/5G: Đã tạm dừng audio để tiết kiệm dữ liệu", Toast.LENGTH_LONG).show();
                     }
                 }
             }
@@ -143,6 +153,8 @@ public class AudioService extends Service {
             @Override public void onPlay() { play(); }
             @Override public void onPause() { pause(); }
             @Override public void onSeekTo(long pos) { seekTo((int) (pos / 1000)); }
+            @Override public void onSkipToNext() { playNextBook(null, null); }
+            @Override public void onSkipToPrevious() { playPreviousBook(); }
         });
         mediaSession.setActive(true);
     }
@@ -170,12 +182,42 @@ public class AudioService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && "PLAY_PAUSE".equals(intent.getAction())) togglePlayPause();
+        if (intent != null && intent.getAction() != null) {
+            String action = intent.getAction();
+            if ("PLAY_PAUSE".equals(action)) togglePlayPause();
+            else if ("SKIP_NEXT".equals(action)) playNextBook(null, null);
+            else if ("SKIP_PREV".equals(action)) playPreviousBook();
+        }
         return START_STICKY; 
     }
 
     @Override
     public IBinder onBind(Intent intent) { return binder; }
+
+    public void playNextBook(RecommendationEngine.UserProfileContext context, List<Book> allBooks) {
+        if (context == null) context = cachedUserContext;
+        if (allBooks == null || allBooks.isEmpty()) allBooks = cachedAllBooks;
+        Book nextBook = queueManager.getNextBook(context, allBooks);
+        if (nextBook != null) {
+            playBook(nextBook);
+        } else {
+            pause();
+            Toast.makeText(this, "Đã hết hàng đợi phát", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void playPreviousBook() {
+        Book prevBook = queueManager.getPreviousBook(currentPosition);
+        if (prevBook != null) {
+            if (currentBook != null && prevBook.getId().equals(currentBook.getId())) {
+                seekTo(0);
+            } else {
+                playBook(prevBook);
+            }
+        } else {
+            seekTo(0);
+        }
+    }
 
     public void playBook(Book book) {
         if (currentBook == null || !currentBook.getId().equals(book.getId())) {
@@ -183,6 +225,10 @@ public class AudioService extends Service {
             this.currentPosition = 0;
             this.totalDuration = 0;
             updateMetadata();
+
+            if (queueManager.getCurrentBook() == null || !book.getId().equals(queueManager.getCurrentBook().getId())) {
+                queueManager.addToQueue(book);
+            }
 
             if (mediaPlayer != null) {
                 mediaPlayer.release();
@@ -218,11 +264,7 @@ public class AudioService extends Service {
                     mediaPlayer.setOnCompletionListener(mp -> {
                         isPlaying = false;
                         updatePlaybackState();
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                            stopForeground(STOP_FOREGROUND_DETACH);
-                        } else {
-                            stopForeground(false);
-                        }
+                        playNextBook(null, null);
                     });
                     mediaPlayer.prepareAsync();
                 } catch (Exception e) {

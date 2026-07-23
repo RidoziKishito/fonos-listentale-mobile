@@ -69,13 +69,19 @@ public class PlaylistDetailFragment extends Fragment {
             public void onBookClick(Book book) {
                 Bundle bundle = new Bundle();
                 bundle.putSerializable("book", book);
-                Navigation.findNavController(view).navigate(R.id.action_playlistDetailFragment_to_bookDetailFragment, bundle);
+                if (playlist != null) {
+                    bundle.putSerializable("playlist", playlist);
+                }
+                Navigation.findNavController(view).navigate(R.id.action_playlistDetailFragment_to_audioPlayerFragment, bundle);
             }
 
             @Override
             public void onPlayClick(Book book) {
                 Bundle bundle = new Bundle();
                 bundle.putSerializable("book", book);
+                if (playlist != null) {
+                    bundle.putSerializable("playlist", playlist);
+                }
                 Navigation.findNavController(view).navigate(R.id.action_playlistDetailFragment_to_audioPlayerFragment, bundle);
             }
 
