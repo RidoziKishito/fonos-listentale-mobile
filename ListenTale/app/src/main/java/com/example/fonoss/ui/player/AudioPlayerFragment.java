@@ -36,8 +36,12 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.slider.Slider;
 import java.util.Locale;
 import java.util.Map;
+import java.util.List;
 
 import com.example.fonoss.data.model.Bookmark;
+import com.example.fonoss.data.model.Playlist;
+import com.example.fonoss.data.recommendation.RecommendationEngine;
+import com.example.fonoss.manager.QueueManager;
 import com.example.fonoss.adapter.BookmarkAdapter;
 import com.example.fonoss.utils.UiNotifier;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -115,10 +119,11 @@ public class AudioPlayerFragment extends Fragment {
                         }
                     }
                 }
+                setupSmartQueue();
             } else if (serviceBook != null) {
-                // TrÆ°á»ng há»£p App bá»‹ kill vÃ  má»Ÿ láº¡i tá»« thÃ´ng bÃ¡o
                 currentBook = serviceBook;
                 isPositionRestored = true;
+                setupSmartQueue();
             }
 
             if (currentBook != null) bindBookData();
@@ -164,11 +169,17 @@ public class AudioPlayerFragment extends Fragment {
         view.findViewById(R.id.button_player_forward_30).setOnClickListener(v -> seekBySeconds(30));
         
         view.findViewById(R.id.button_player_prev).setOnClickListener(v -> {
-            android.widget.Toast.makeText(getContext(), "Previous book (Coming soon)", android.widget.Toast.LENGTH_SHORT).show();
+            if (isBound && audioService != null) {
+                audioService.playPreviousBook();
+                updateUI();
+            }
         });
         
         view.findViewById(R.id.button_player_next).setOnClickListener(v -> {
-            android.widget.Toast.makeText(getContext(), "Next book (Coming soon)", android.widget.Toast.LENGTH_SHORT).show();
+            if (isBound && audioService != null) {
+                audioService.playNextBook(null, null);
+                updateUI();
+            }
         });
 
         playerSlider.addOnChangeListener((slider, value, fromUser) -> {
@@ -404,6 +415,11 @@ public class AudioPlayerFragment extends Fragment {
 
     private void updateUI() {
         if (isBound && audioService != null) {
+            Book serviceBook = audioService.getCurrentBook();
+            if (serviceBook != null && (currentBook == null || !serviceBook.getId().equals(currentBook.getId()))) {
+                currentBook = serviceBook;
+                bindBookData();
+            }
             int pos = audioService.getCurrentPosition();
             int duration = audioService.getTotalDuration();
             textCurrentTime.setText(formatTime(pos));
@@ -537,6 +553,78 @@ public class AudioPlayerFragment extends Fragment {
             requireContext().unbindService(connection);
         }
         handler.removeCallbacks(updateProgressTask);
+    }
+
+    private void setupSmartQueue() {
+        if (!isBound || audioService == null || currentBook == null) return;
+
+        RecommendationEngine.UserProfileContext context = buildUserProfileContext();
+
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("books").get().addOnSuccessListener(snapshot -> {
+                    List<Book> allBooks = new java.util.ArrayList<>();
+                    if (snapshot != null) {
+                        for (com.google.firebase.firestore.DocumentSnapshot doc : snapshot.getDocuments()) {
+                            Book b = doc.toObject(Book.class);
+                            if (b != null) {
+                                b.setId(doc.getId());
+                                allBooks.add(b);
+                            }
+                        }
+                    }
+                    if (isAdded() && audioService != null && currentBook != null) {
+                        audioService.setAllBooksAndContext(allBooks, context);
+
+                        Playlist playlistArg = null;
+                        if (getArguments() != null) {
+                            playlistArg = (Playlist) getArguments().getSerializable("playlist");
+                        }
+
+                        if (playlistArg != null && playlistArg.getBooks() != null && !playlistArg.getBooks().isEmpty()) {
+                            int startIndex = 0;
+                            for (int i = 0; i < playlistArg.getBooks().size(); i++) {
+                                Book pb = playlistArg.getBooks().get(i);
+                                if (pb != null && currentBook.getId().equals(pb.getId())) {
+                                    startIndex = i;
+                                    break;
+                                }
+                            }
+                            audioService.getQueueManager().setQueue(playlistArg.getBooks(), startIndex, QueueManager.QueueMode.PLAYLIST);
+                        } else {
+                            // Outside Playlist: Reset queue and populate recommended/series books
+                            audioService.getQueueManager().setQueueFromBook(currentBook, allBooks, context);
+                        }
+                    }
+                });
+    }
+
+    private RecommendationEngine.UserProfileContext buildUserProfileContext() {
+        java.util.Set<String> savedBookIds = new java.util.HashSet<>();
+        java.util.Set<String> inProgressBookIds = new java.util.HashSet<>();
+        java.util.Set<String> completedBookIds = new java.util.HashSet<>();
+
+        List<Book> saved = libraryViewModel != null ? libraryViewModel.getSavedBooks().getValue() : null;
+        if (saved != null) {
+            for (Book b : saved) if (b != null && b.getId() != null) savedBookIds.add(b.getId());
+        }
+
+        List<Book> inProg = libraryViewModel != null ? libraryViewModel.getInProgressBooks().getValue() : null;
+        if (inProg != null) {
+            for (Book b : inProg) if (b != null && b.getId() != null) inProgressBookIds.add(b.getId());
+        }
+
+        List<Book> comp = libraryViewModel != null ? libraryViewModel.getCompletedBooks().getValue() : null;
+        if (comp != null) {
+            for (Book b : comp) if (b != null && b.getId() != null) completedBookIds.add(b.getId());
+        }
+
+        RecommendationEngine.UserProfileContext ctx = new RecommendationEngine.UserProfileContext();
+        ctx.setSavedBookIds(savedBookIds);
+        ctx.setInProgressBookIds(inProgressBookIds);
+        ctx.setCompletedBookIds(completedBookIds);
+        if (currentBook != null) ctx.setLastListenedBook(currentBook);
+
+        return ctx;
     }
 
     @Override public void onDestroy() { if (sleepTimer != null) sleepTimer.cancel(); super.onDestroy(); }
