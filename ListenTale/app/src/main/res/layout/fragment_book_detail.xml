@@ -281,7 +281,7 @@
                 android:textSize="14sp" />
 
             <LinearLayout
-                android:id="@+id/section_related_books"
+                android:id="@+id/section_series_books"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="28dp"
@@ -289,15 +289,45 @@
                 android:visibility="gone">
 
                 <TextView
+                    android:id="@+id/text_title_series_books"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-bold"
-                    android:text="Related Books"
+                    android:text="More in this Series"
                     android:textColor="@color/slate_900"
                     android:textSize="18sp" />
 
                 <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recycler_related_books"
+                    android:id="@+id/recycler_series_books"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:clipToPadding="false"
+                    android:nestedScrollingEnabled="false"
+                    android:orientation="horizontal"
+                    android:overScrollMode="never"
+                    tools:listitem="@layout/item_book_card" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/section_recommended_books"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/text_title_recommended_books"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="You Might Also Like"
+                    android:textColor="@color/slate_900"
+                    android:textSize="18sp" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recycler_recommended_books"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"

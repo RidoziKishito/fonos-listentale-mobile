@@ -37,6 +37,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
+import com.example.fonoss.data.recommendation.RecommendationEngine;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -52,9 +55,12 @@ public class BookDetailFragment extends Fragment {
     private View buttonListen, buttonRead, buttonRateBook;
     private TextView textBookRating, textRatingCount;
     private ProgressBar progressDownload;
-    private View relatedBooksSection;
-    private List<Book> relatedBooks = new ArrayList<>();
-    private BookAdapter relatedBooksAdapter;
+    private View sectionSeriesBooks, sectionRecommendedBooks;
+    private TextView textTitleSeriesBooks;
+    private List<Book> seriesBooks = new ArrayList<>();
+    private List<Book> recommendedBooks = new ArrayList<>();
+    private BookAdapter seriesBooksAdapter;
+    private BookAdapter recommendedBooksAdapter;
 
     @Nullable
     @Override
@@ -77,15 +83,16 @@ public class BookDetailFragment extends Fragment {
         buttonRateBook = view.findViewById(R.id.button_rate_book);
         textBookRating = view.findViewById(R.id.text_book_rating);
         textRatingCount = view.findViewById(R.id.text_rating_count);
-        progressDownload = view.findViewById(R.id.progress_download);
-        relatedBooksSection = view.findViewById(R.id.section_related_books);
+        sectionSeriesBooks = view.findViewById(R.id.section_series_books);
+        sectionRecommendedBooks = view.findViewById(R.id.section_recommended_books);
+        textTitleSeriesBooks = view.findViewById(R.id.text_title_series_books);
 
         if (getArguments() != null) {
             currentBook = (Book) getArguments().getSerializable("book");
             if (currentBook != null) {
                 bindBookDetails(view);
-                setupRelatedBooks(view);
-                fetchRelatedBooks();
+                setupRecommendationSections(view);
+                fetchRecommendationSections();
                 ratingViewModel.loadUserRating(currentBook.getId());
             }
         }
@@ -159,52 +166,122 @@ public class BookDetailFragment extends Fragment {
         checkOfflineAvailability();
     }
 
-    private void setupRelatedBooks(View view) {
-        RecyclerView recyclerView = view.findViewById(R.id.recycler_related_books);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
-        relatedBooksAdapter = new BookAdapter(relatedBooks, book -> {
-            Bundle bundle = new Bundle();
-            bundle.putSerializable("book", book);
-            Navigation.findNavController(view).navigate(R.id.action_bookDetailFragment_to_bookDetailFragment, bundle);
-        });
-        recyclerView.setAdapter(relatedBooksAdapter);
+    private void setupRecommendationSections(View view) {
+        RecyclerView recyclerSeries = view.findViewById(R.id.recycler_series_books);
+        if (recyclerSeries != null) {
+            recyclerSeries.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+            seriesBooksAdapter = new BookAdapter(seriesBooks, book -> {
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("book", book);
+                Navigation.findNavController(view).navigate(R.id.action_bookDetailFragment_to_bookDetailFragment, bundle);
+            });
+            recyclerSeries.setAdapter(seriesBooksAdapter);
+        }
+
+        RecyclerView recyclerRecommended = view.findViewById(R.id.recycler_recommended_books);
+        if (recyclerRecommended != null) {
+            recyclerRecommended.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+            recommendedBooksAdapter = new BookAdapter(recommendedBooks, book -> {
+                Bundle bundle = new Bundle();
+                bundle.putSerializable("book", book);
+                Navigation.findNavController(view).navigate(R.id.action_bookDetailFragment_to_bookDetailFragment, bundle);
+            });
+            recyclerRecommended.setAdapter(recommendedBooksAdapter);
+        }
     }
 
-    private void fetchRelatedBooks() {
-        if (currentBook == null || currentBook.getGenre() == null) return;
-        
-        String currentGenre = currentBook.getGenre().toLowerCase();
-        String currentSeries = currentBook.getSeries() != null ? normalizeSeries(currentBook.getSeries()) : null;
+    private void fetchRecommendationSections() {
+        if (currentBook == null) return;
 
         com.google.firebase.firestore.FirebaseFirestore.getInstance()
                 .collection("books")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<Book> list = new ArrayList<>();
+                    List<Book> allBooks = new ArrayList<>();
                     for (com.google.firebase.firestore.DocumentSnapshot doc : queryDocumentSnapshots) {
                         Book book = doc.toObject(Book.class);
                         if (book != null) {
                             book.setId(doc.getId());
-                            // Skip same book
-                            if (book.getId().equals(currentBook.getId())) continue;
-
-                            boolean isRelated = false;
-                            if (book.getGenre() != null && book.getGenre().toLowerCase().contains(currentGenre)) {
-                                isRelated = true;
-                            } else if (currentSeries != null && book.getSeries() != null && normalizeSeries(book.getSeries()).equals(currentSeries)) {
-                                isRelated = true;
-                            }
-
-                            if (isRelated) list.add(book);
+                            allBooks.add(book);
                         }
                     }
-                    if (!list.isEmpty()) {
-                        relatedBooks.clear();
-                        relatedBooks.addAll(list);
-                        relatedBooksAdapter.notifyDataSetChanged();
-                        relatedBooksSection.setVisibility(View.VISIBLE);
+
+                    if (allBooks.isEmpty()) return;
+
+                    // Section 1: Same Series / Same Author Books
+                    List<Book> seriesList = RecommendationEngine.getSeriesBooks(currentBook, allBooks);
+
+                    if (currentBook.getSeries() != null && !currentBook.getSeries().trim().isEmpty()) {
+                        if (textTitleSeriesBooks != null) {
+                            textTitleSeriesBooks.setText("More in " + currentBook.getSeries().trim());
+                        }
+                    } else if (currentBook.getAuthor() != null && !currentBook.getAuthor().trim().isEmpty()) {
+                        if (textTitleSeriesBooks != null) {
+                            textTitleSeriesBooks.setText("More by " + currentBook.getAuthor().trim());
+                        }
+                    } else {
+                        if (textTitleSeriesBooks != null) {
+                            textTitleSeriesBooks.setText("More Like This");
+                        }
+                    }
+
+                    if (!seriesList.isEmpty()) {
+                        seriesBooks.clear();
+                        seriesBooks.addAll(seriesList);
+                        if (seriesBooksAdapter != null) seriesBooksAdapter.notifyDataSetChanged();
+                        if (sectionSeriesBooks != null) sectionSeriesBooks.setVisibility(View.VISIBLE);
+                    } else {
+                        if (sectionSeriesBooks != null) sectionSeriesBooks.setVisibility(View.GONE);
+                    }
+
+                    // Section 2: You Might Also Like (Recommendation Engine)
+                    RecommendationEngine.UserProfileContext context = buildUserProfileContext();
+                    context.setLastListenedBook(currentBook);
+
+                    RecommendationEngine.RecommendationResult result = RecommendationEngine.getTopRecommendations(allBooks, context);
+                    List<Book> topRcmd = new ArrayList<>();
+                    for (Book b : result.getTopRecommended()) {
+                        if (b != null && b.getId() != null && !b.getId().equals(currentBook.getId())) {
+                            topRcmd.add(b);
+                        }
+                    }
+
+                    if (!topRcmd.isEmpty()) {
+                        recommendedBooks.clear();
+                        recommendedBooks.addAll(topRcmd);
+                        if (recommendedBooksAdapter != null) recommendedBooksAdapter.notifyDataSetChanged();
+                        if (sectionRecommendedBooks != null) sectionRecommendedBooks.setVisibility(View.VISIBLE);
+                    } else {
+                        if (sectionRecommendedBooks != null) sectionRecommendedBooks.setVisibility(View.GONE);
                     }
                 });
+    }
+
+    private RecommendationEngine.UserProfileContext buildUserProfileContext() {
+        RecommendationEngine.UserProfileContext context = new RecommendationEngine.UserProfileContext();
+        if (libraryViewModel != null) {
+            List<Book> saved = libraryViewModel.getSavedBooks().getValue();
+            if (saved != null) {
+                Set<String> savedIds = new HashSet<>();
+                for (Book b : saved) if (b != null && b.getId() != null) savedIds.add(b.getId());
+                context.setSavedBookIds(savedIds);
+            }
+
+            List<Book> inProgress = libraryViewModel.getInProgressBooks().getValue();
+            if (inProgress != null) {
+                Set<String> inProgressIds = new HashSet<>();
+                for (Book b : inProgress) if (b != null && b.getId() != null) inProgressIds.add(b.getId());
+                context.setInProgressBookIds(inProgressIds);
+            }
+
+            List<Book> completed = libraryViewModel.getCompletedBooks().getValue();
+            if (completed != null) {
+                Set<String> completedIds = new HashSet<>();
+                for (Book b : completed) if (b != null && b.getId() != null) completedIds.add(b.getId());
+                context.setCompletedBookIds(completedIds);
+            }
+        }
+        return context;
     }
 
     private String normalizeSeries(String series) {
