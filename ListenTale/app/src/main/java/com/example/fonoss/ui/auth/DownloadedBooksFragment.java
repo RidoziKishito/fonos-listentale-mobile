@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.fonoss.R;
+import com.example.fonoss.ui.auth.UserViewModel;
 import com.example.fonoss.adapter.BookAdapter;
 import com.example.fonoss.data.model.Book;
 import com.example.fonoss.ui.library.LibraryViewModel;
@@ -27,6 +28,7 @@ import dagger.hilt.android.AndroidEntryPoint;
 public class DownloadedBooksFragment extends Fragment {
 
     private LibraryViewModel libraryViewModel;
+    private UserViewModel userViewModel;
     private BookAdapter adapter;
     private List<Book> bookList = new ArrayList<>();
     private TextView textEmpty;
@@ -42,6 +44,7 @@ public class DownloadedBooksFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         libraryViewModel = new ViewModelProvider(requireActivity()).get(LibraryViewModel.class);
+        userViewModel = new ViewModelProvider(requireActivity()).get(UserViewModel.class);
         textEmpty = view.findViewById(R.id.text_empty);
 
         view.findViewById(R.id.button_back).setOnClickListener(v -> 
@@ -75,6 +78,10 @@ public class DownloadedBooksFragment extends Fragment {
         }, true);
         
         recyclerView.setAdapter(adapter);
+
+        userViewModel.getAccountType().observe(getViewLifecycleOwner(), type -> {
+            if (adapter != null) adapter.setUserAccountType(type);
+        });
 
         libraryViewModel.getDownloadedBooks().observe(getViewLifecycleOwner(), books -> {
             bookList.clear();

@@ -21,6 +21,7 @@ public class Book implements Serializable {
     private String audio_link;
     private long views;
     private long publishDate;
+    private boolean isPremium;
 
     public Book() {
         this.chapters = new ArrayList<>();
@@ -107,6 +108,12 @@ public class Book implements Serializable {
 
     public long getPublishDate() { return publishDate; }
     public void setPublishDate(long publishDate) { this.publishDate = publishDate; }
+
+    @com.google.firebase.firestore.PropertyName("IsPremium")
+    public boolean getIsPremium() { return isPremium; }
+
+    @com.google.firebase.firestore.PropertyName("IsPremium")
+    public void setIsPremium(boolean premium) { isPremium = premium; }
 
     @com.google.firebase.firestore.PropertyName("view_count")
     public void setViewCount(long views) { this.views = views; }

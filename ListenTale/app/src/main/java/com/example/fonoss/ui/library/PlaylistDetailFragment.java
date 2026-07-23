@@ -3,6 +3,7 @@ package com.example.fonoss.ui.library;
 import com.example.fonoss.R;
 import dagger.hilt.android.AndroidEntryPoint;
 
+import com.example.fonoss.ui.auth.UserViewModel;
 import com.example.fonoss.utils.UiNotifier;
 import com.example.fonoss.adapter.BookAdapter;
 import com.example.fonoss.data.model.Book;
@@ -28,6 +29,7 @@ public class PlaylistDetailFragment extends Fragment {
 
     private Playlist playlist;
     private LibraryViewModel libraryViewModel;
+    private UserViewModel userViewModel;
     private BookAdapter adapter;
     private List<Book> bookList = new ArrayList<>();
 
@@ -51,6 +53,7 @@ public class PlaylistDetailFragment extends Fragment {
         }
 
         libraryViewModel = new ViewModelProvider(requireActivity()).get(LibraryViewModel.class);
+        userViewModel = new ViewModelProvider(requireActivity()).get(UserViewModel.class);
         
         TextView textName = view.findViewById(R.id.text_playlist_name);
         textName.setText(playlist.getName());
@@ -85,6 +88,10 @@ public class PlaylistDetailFragment extends Fragment {
         }, true);
         
         recyclerView.setAdapter(adapter);
+
+        userViewModel.getAccountType().observe(getViewLifecycleOwner(), type -> {
+            if (adapter != null) adapter.setUserAccountType(type);
+        });
 
         libraryViewModel.getPlaylists().observe(getViewLifecycleOwner(), playlists -> {
             if (playlists != null) {

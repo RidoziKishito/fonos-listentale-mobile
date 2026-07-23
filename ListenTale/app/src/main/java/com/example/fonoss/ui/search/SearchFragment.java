@@ -3,6 +3,7 @@ package com.example.fonoss.ui.search;
 import com.example.fonoss.R;
 import dagger.hilt.android.AndroidEntryPoint;
 
+import com.example.fonoss.ui.auth.UserViewModel;
 import com.example.fonoss.adapter.BookAdapter;
 import com.example.fonoss.data.model.Book;
 
@@ -48,6 +49,7 @@ public class SearchFragment extends Fragment {
     private BookAdapter adapter;
     private RecyclerView recyclerResults;
     private TextView recentLabel;
+    private UserViewModel userViewModel;
     private FirebaseFirestore db;
     private Set<String> selectedCategories = new HashSet<>();
     private List<String> allAvailableGenres = new ArrayList<>();
@@ -73,6 +75,7 @@ public class SearchFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         db = FirebaseFirestore.getInstance();
+        userViewModel = new androidx.lifecycle.ViewModelProvider(requireActivity()).get(UserViewModel.class);
         
         TextInputEditText inputSearch = view.findViewById(R.id.input_search);
         recyclerResults = view.findViewById(R.id.recycler_search_results);
@@ -108,6 +111,10 @@ public class SearchFragment extends Fragment {
 
         recyclerResults.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(getContext(), 2));
         recyclerResults.setAdapter(adapter);
+
+        userViewModel.getAccountType().observe(getViewLifecycleOwner(), type -> {
+            if (adapter != null) adapter.setUserAccountType(type);
+        });
 
         fetchAllBooks();
 

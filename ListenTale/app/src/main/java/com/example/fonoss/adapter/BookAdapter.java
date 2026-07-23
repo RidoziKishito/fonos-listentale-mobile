@@ -26,6 +26,7 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
     private boolean isSelectionMode = false;
     private Set<String> selectedBookIds = new HashSet<>();
     private Set<String> downloadedBookIds = new HashSet<>();
+    private String userAccountType = "FREE";
 
     public interface OnBookClickListener {
         void onBookClick(Book book);
@@ -68,14 +69,16 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
                 .into(holder.cover);
 
         boolean isDownloaded = downloadedBookIds.contains(book.getId());
+        boolean isLocked = book.getIsPremium() && "FREE".equals(userAccountType);
+
         if (isSelectionMode) {
-            holder.itemView.setEnabled(!isDownloaded);
-            holder.itemView.setAlpha(isDownloaded ? 0.5f : 1.0f);
+            holder.itemView.setEnabled(!isDownloaded && !isLocked);
+            holder.itemView.setAlpha((isDownloaded || isLocked) ? 0.5f : 1.0f);
             if (holder.checkBox != null) {
-                holder.checkBox.setEnabled(!isDownloaded);
+                holder.checkBox.setEnabled(!isDownloaded && !isLocked);
                 holder.checkBox.setVisibility(View.VISIBLE);
                 holder.checkBox.setOnCheckedChangeListener(null);
-                holder.checkBox.setChecked(selectedBookIds.contains(book.getId()) && !isDownloaded);
+                holder.checkBox.setChecked(selectedBookIds.contains(book.getId()) && !isDownloaded && !isLocked);
                 holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
                     if (isChecked) selectedBookIds.add(book.getId());
                     else selectedBookIds.remove(book.getId());
@@ -84,24 +87,43 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
             }
         } else {
             holder.itemView.setEnabled(true);
-            holder.itemView.setAlpha(1.0f);
+            holder.itemView.setAlpha(isLocked ? 0.5f : 1.0f);
             if (holder.checkBox != null) holder.checkBox.setVisibility(View.GONE);
         }
 
+        if (holder.lockIcon != null) {
+            holder.lockIcon.setVisibility(isLocked ? View.VISIBLE : View.GONE);
+        }
+
         if (holder.buttonPlay != null) {
-            holder.buttonPlay.setOnClickListener(v -> listener.onPlayClick(book));
+            holder.buttonPlay.setOnClickListener(v -> {
+                if (isLocked) showUpgradeToast(v.getContext());
+                else listener.onPlayClick(book);
+            });
+            holder.buttonPlay.setAlpha(isLocked ? 0.5f : 1.0f);
+            holder.buttonPlay.setEnabled(!isLocked);
         }
         if (holder.buttonRead != null) {
-            holder.buttonRead.setOnClickListener(v -> listener.onReadClick(book));
+            holder.buttonRead.setOnClickListener(v -> {
+                if (isLocked) showUpgradeToast(v.getContext());
+                else listener.onReadClick(book);
+            });
+            holder.buttonRead.setAlpha(isLocked ? 0.5f : 1.0f);
+            holder.buttonRead.setEnabled(!isLocked);
         }
 
         holder.itemView.setOnClickListener(v -> {
-            if (isSelectionMode && holder.checkBox != null && !isDownloaded) {
+            if (isSelectionMode && holder.checkBox != null && !isDownloaded && !isLocked) {
                 holder.checkBox.setChecked(!holder.checkBox.isChecked());
             } else if (!isSelectionMode) {
-                listener.onBookClick(book);
+                if (isLocked) showUpgradeToast(v.getContext());
+                else listener.onBookClick(book);
             }
         });
+    }
+
+    private void showUpgradeToast(android.content.Context context) {
+        android.widget.Toast.makeText(context, "Premium account required to access this book", android.widget.Toast.LENGTH_SHORT).show();
     }
 
     public void setSelectionMode(boolean enabled) {
@@ -124,6 +146,11 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
         notifyDataSetChanged();
     }
 
+    public void setUserAccountType(String type) {
+        this.userAccountType = type != null ? type : "FREE";
+        notifyDataSetChanged();
+    }
+
     @Override
     public int getItemCount() { return books.size(); }
 
@@ -134,7 +161,7 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
 
     static class BookViewHolder extends RecyclerView.ViewHolder {
         TextView title, author, category, duration, pages;
-        ImageView cover;
+        ImageView cover, lockIcon;
         CheckBox checkBox;
         ImageButton buttonPlay, buttonRead;
 
@@ -143,6 +170,7 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
             title = itemView.findViewById(R.id.text_book_title);
             author = itemView.findViewById(R.id.text_book_author);
             cover = itemView.findViewById(R.id.image_book_cover);
+            lockIcon = itemView.findViewById(R.id.image_premium_lock);
             category = itemView.findViewById(R.id.text_book_category);
             checkBox = itemView.findViewById(R.id.checkbox_select);
             duration = itemView.findViewById(R.id.text_book_duration);

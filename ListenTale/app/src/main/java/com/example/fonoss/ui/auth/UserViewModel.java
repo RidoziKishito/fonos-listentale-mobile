@@ -14,12 +14,15 @@ import java.util.HashMap;
 import javax.inject.Inject;
 import dagger.hilt.android.lifecycle.HiltViewModel;
 import com.example.fonoss.data.repository.UserRepository;
+import org.json.JSONObject;
 
 @HiltViewModel
 public class UserViewModel extends ViewModel {
     private final MutableLiveData<String> userName = new MutableLiveData<>("Loading...");
     private final MutableLiveData<String> userEmail = new MutableLiveData<>("");
     private final MutableLiveData<String> userAvatar = new MutableLiveData<>("");
+    private final MutableLiveData<String> accountType = new MutableLiveData<>("FREE");
+    private final MutableLiveData<Long> upgradeDate = new MutableLiveData<>(null);
     private final UserRepository userRepository;
 
     @Inject
@@ -39,6 +42,14 @@ public class UserViewModel extends ViewModel {
         return userAvatar;
     }
 
+    public LiveData<String> getAccountType() {
+        return accountType;
+    }
+
+    public LiveData<Long> getUpgradeDate() {
+        return upgradeDate;
+    }
+
     public void fetchUserData() {
         FirebaseUser user = userRepository.getCurrentUser();
         if (user != null) {
@@ -49,6 +60,12 @@ public class UserViewModel extends ViewModel {
                             userName.setValue(documentSnapshot.getString("name"));
                             if (documentSnapshot.contains("avatarUrl")) {
                                 userAvatar.setValue(documentSnapshot.getString("avatarUrl"));
+                            }
+                            if (documentSnapshot.contains("accountType")) {
+                                accountType.setValue(documentSnapshot.getString("accountType"));
+                            }
+                            if (documentSnapshot.contains("upgradeDate")) {
+                                upgradeDate.setValue(documentSnapshot.getLong("upgradeDate"));
                             }
                         }
                     });
@@ -94,10 +111,52 @@ public class UserViewModel extends ViewModel {
         }
     }
 
+    public void startUpgradeRequest(UserRepository.UpgradeRequestCallback callback) {
+        FirebaseUser user = userRepository.getCurrentUser();
+        if (user == null) return;
+        userRepository.createUpgradeRequest(user.getUid(), callback);
+    }
+
+    public com.google.firebase.firestore.ListenerRegistration listenToPaymentStatus(String paymentCode, com.google.android.gms.tasks.OnSuccessListener<Void> successListener) {
+        return FirebaseFirestore.getInstance()
+                .collection("upgrade_transactions")
+                .document(paymentCode)
+                .addSnapshotListener((snapshot, e) -> {
+                    if (snapshot != null && snapshot.exists()) {
+                        String status = snapshot.getString("status");
+                        if ("SUCCESS".equals(status)) {
+                            // Account update should be handled by backend, but we refresh local state
+                            accountType.setValue("PREMIUM");
+                            upgradeDate.setValue(System.currentTimeMillis());
+                            successListener.onSuccess(null);
+                        }
+                    }
+                });
+    }
+
+    public void verifyAndUpgrade(com.google.android.gms.tasks.OnSuccessListener<Void> successListener, 
+                                 com.google.android.gms.tasks.OnFailureListener failureListener) {
+        FirebaseUser user = userRepository.getCurrentUser();
+        if (user == null) return;
+
+        // Simulate backend verification delay
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            userRepository.upgradeToPremium(user.getUid())
+                    .addOnSuccessListener(aVoid -> {
+                        accountType.setValue("PREMIUM");
+                        upgradeDate.setValue(System.currentTimeMillis());
+                        successListener.onSuccess(null);
+                    })
+                    .addOnFailureListener(failureListener);
+        }, 2000);
+    }
+
     public void clearData() {
         userName.setValue("");
         userEmail.setValue("");
         userAvatar.setValue("");
+        accountType.setValue("FREE");
+        upgradeDate.setValue(null);
     }
 }
 

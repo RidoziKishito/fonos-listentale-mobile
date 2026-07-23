@@ -61,6 +61,7 @@
                 android:textSize="24sp" />
 
             <TextView
+                android:id="@+id/text_profile_membership"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
@@ -133,6 +134,24 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="32dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/button_upgrade_account"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="72dp"
+                android:layout_marginBottom="16dp"
+                android:backgroundTint="@color/primary_600"
+                android:gravity="start|center_vertical"
+                android:text="Upgrade Account"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:cornerRadius="24dp"
+                app:icon="@android:drawable/btn_star_big_on"
+                app:iconSize="24dp"
+                app:iconTint="@color/white" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/button_account_info"

@@ -5,6 +5,7 @@ import dagger.hilt.android.AndroidEntryPoint;
 
 import com.example.fonoss.ui.library.LibraryViewModel;
 import com.example.fonoss.ui.home.WelcomeFragment;
+import com.example.fonoss.data.repository.UserRepository;
 
 import android.Manifest;
 import android.content.DialogInterface;
@@ -33,7 +34,10 @@ import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import org.json.JSONObject;
 import android.app.Activity;
 import android.content.Intent;
 
@@ -155,10 +159,26 @@ public class ProfileFragment extends Fragment {
         userViewModel = new ViewModelProvider(requireActivity()).get(UserViewModel.class);
         LibraryViewModel libraryViewModel = new ViewModelProvider(requireActivity()).get(LibraryViewModel.class);
         TextView textName = view.findViewById(R.id.text_profile_name);
+        TextView textMembership = view.findViewById(R.id.text_profile_membership);
         avatarImageView = view.findViewById(R.id.image_profile_avatar);
+        View buttonUpgrade = view.findViewById(R.id.button_upgrade_account);
 
         userViewModel.getUserName().observe(getViewLifecycleOwner(), name -> {
             if (textName != null) textName.setText(name);
+        });
+
+        userViewModel.getAccountType().observe(getViewLifecycleOwner(), type -> {
+            if (textMembership != null) {
+                if ("PREMIUM".equals(type)) {
+                    textMembership.setText("Premium Member");
+                    textMembership.setTextColor(ContextCompat.getColor(requireContext(), R.color.primary_600));
+                    buttonUpgrade.setVisibility(View.GONE);
+                } else {
+                    textMembership.setText("Free Member");
+                    textMembership.setTextColor(ContextCompat.getColor(requireContext(), R.color.slate_500));
+                    buttonUpgrade.setVisibility(View.VISIBLE);
+                }
+            }
         });
 
         userViewModel.getUserAvatar().observe(getViewLifecycleOwner(), base64Str -> {
@@ -187,6 +207,8 @@ public class ProfileFragment extends Fragment {
             Navigation.findNavController(v).navigate(R.id.action_profileFragment_to_accountInfoFragment)
         );
 
+        buttonUpgrade.setOnClickListener(v -> showUpgradeDialog());
+
         view.findViewById(R.id.button_downloaded).setOnClickListener(v ->
             Navigation.findNavController(v).navigate(R.id.action_profileFragment_to_downloadedBooksFragment)
         );
@@ -204,6 +226,111 @@ public class ProfileFragment extends Fragment {
                     .setPopUpTo(R.id.nav_graph, true)
                     .build();
             Navigation.findNavController(v).navigate(R.id.welcomeFragment, null, navOptions);
+        });
+    }
+
+    private void showUpgradeDialog() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+
+        AlertDialog loadingDialog = new AlertDialog.Builder(requireContext())
+                .setMessage("Generating payment request...")
+                .setCancelable(false)
+                .show();
+
+        userViewModel.startUpgradeRequest(new UserRepository.UpgradeRequestCallback() {
+            @Override
+            public void onSuccess(JSONObject result) {
+                requireActivity().runOnUiThread(() -> {
+                    loadingDialog.dismiss();
+                    try {
+                        String qrUrl = result.getString("qrUrl");
+                        String paymentCode = result.getString("paymentCode");
+                        String bank = result.getString("bank");
+                        String accountNo = result.getString("accountNumber");
+                        String accountName = result.getString("accountName");
+                        int amount = result.getInt("amount");
+
+                        displayRealUpgradeDialog(qrUrl, paymentCode, bank, accountNo, accountName, amount);
+                    } catch (Exception e) {
+                        Toast.makeText(getContext(), "Error parsing response", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String message) {
+                requireActivity().runOnUiThread(() -> {
+                    loadingDialog.dismiss();
+                    Toast.makeText(getContext(), "Failed to create request: " + message, Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+
+    private ListenerRegistration paymentListener;
+
+    private void displayRealUpgradeDialog(String qrUrl, String paymentCode, String bank, String accountNo, String accountName, int amount) {
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setView(getLayoutInflater().inflate(R.layout.dialog_upgrade_account, null))
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        dialog.show();
+
+        ImageView qrImage = dialog.findViewById(R.id.image_qr_code);
+        TextView memoText = dialog.findViewById(R.id.text_payment_memo);
+        TextView bankText = dialog.findViewById(R.id.text_bank_info);
+        TextView accountNoText = dialog.findViewById(R.id.text_account_number);
+        TextView accountNameText = dialog.findViewById(R.id.text_account_name);
+        View btnPaid = dialog.findViewById(R.id.button_paid);
+        View btnCancel = dialog.findViewById(R.id.button_cancel);
+
+        if (memoText != null) memoText.setText("Memo: " + paymentCode);
+        if (bankText != null) bankText.setText("Bank: " + bank);
+        if (accountNoText != null) accountNoText.setText("Account: " + accountNo);
+        if (accountNameText != null) accountNameText.setText("Holder: " + accountName);
+
+        if (qrImage != null) Glide.with(this).load(qrUrl).into(qrImage);
+
+        if (btnCancel != null) btnCancel.setOnClickListener(view -> {
+            if (paymentListener != null) paymentListener.remove();
+            dialog.dismiss();
+        });
+
+        if (btnPaid != null) btnPaid.setOnClickListener(view -> {
+            btnPaid.setEnabled(false);
+            Toast.makeText(getContext(), "Verifying payment simulation...", Toast.LENGTH_SHORT).show();
+            
+            userViewModel.verifyAndUpgrade(aVoid -> {
+                if (paymentListener != null) paymentListener.remove();
+                dialog.dismiss();
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                        .setTitle("Success (Simulation)")
+                        .setMessage("Your account has been upgraded to Premium for testing. Enjoy!")
+                        .setPositiveButton("Awesome", null)
+                        .show();
+            }, e -> {
+                btnPaid.setEnabled(true);
+                Toast.makeText(getContext(), "Simulation failed.", Toast.LENGTH_SHORT).show();
+            });
+        });
+
+        paymentListener = userViewModel.listenToPaymentStatus(paymentCode, aVoid -> {
+            if (paymentListener != null) paymentListener.remove();
+            dialog.dismiss();
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Upgrade Successful!")
+                    .setMessage("Welcome to Premium! Your account has been upgraded successfully.")
+                    .setPositiveButton("Explore Premium", null)
+                    .show();
+        });
+
+        dialog.setOnDismissListener(d -> {
+            if (paymentListener != null) paymentListener.remove();
         });
     }
 
