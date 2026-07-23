@@ -8,35 +8,53 @@
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="90dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingBottom="24dp">
+            android:orientation="vertical">
 
-            <RelativeLayout
+            <!-- Clean Top Header Bar -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="32dp"
-                android:layout_marginTop="32dp">
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="20dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/text_discover_title"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-black"
-                    android:text="Discover"
-                    android:textColor="@color/slate_900"
-                    android:textSize="32sp" />
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-bold"
+                        android:text="Welcome Back 👋"
+                        android:textColor="@color/primary_600"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/text_discover_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:fontFamily="sans-serif-black"
+                        android:text="Discover Books"
+                        android:textColor="@color/slate_900"
+                        android:textSize="26sp" />
+                </LinearLayout>
 
                 <LinearLayout
                     android:id="@+id/layout_discover_actions"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -44,146 +62,158 @@
                         android:id="@+id/button_upgrade_header"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="wrap_content"
-                        android:layout_height="32dp"
-                        android:layout_marginEnd="8dp"
+                        android:layout_height="38dp"
+                        android:layout_marginEnd="10dp"
                         android:backgroundTint="@color/primary_600"
+                        android:fontFamily="sans-serif-bold"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp"
+                        android:paddingHorizontal="14dp"
                         android:text="⭐ Premium"
                         android:textAllCaps="false"
                         android:textColor="@color/white"
-                        android:textSize="11sp"
-                        android:fontFamily="sans-serif-bold"
-                        android:paddingHorizontal="10dp"
-                        android:minWidth="0dp"
-                        android:minHeight="0dp"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        app:cornerRadius="16dp"
-                        android:visibility="gone" />
+                        android:textSize="12sp"
+                        android:visibility="gone"
+                        app:cornerRadius="19dp" />
 
-                    <ImageButton
-                        android:id="@+id/button_download_manager"
+                    <com.google.android.material.card.MaterialCardView
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:src="@android:drawable/stat_sys_download_done"
-                        app:tint="@color/primary_600"
-                        android:contentDescription="Downloaded Books" />
-                </LinearLayout>
-            </RelativeLayout>
+                        app:cardBackgroundColor="@color/white"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="2dp"
+                        app:strokeColor="@color/slate_200"
+                        app:strokeWidth="1dp">
 
+                        <ImageButton
+                            android:id="@+id/button_download_manager"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Downloaded Books"
+                            android:src="@android:drawable/stat_sys_download_done"
+                            app:tint="@color/primary_600" />
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Hidden optional ChipGroup & TabLayout to maintain 100% API compatibility -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:paddingHorizontal="32dp"
-                android:scrollbars="none"
-                android:clipToPadding="false">
+                android:layout_height="0dp"
+                android:visibility="gone">
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chip_group_sort"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:singleSelection="true"
-                    app:selectionRequired="true"
-                    app:chipSpacingHorizontal="8dp">
+                    android:layout_height="wrap_content">
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chip_sort_relevance"
-                        style="@style/Widget.Material3.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Relevance"
-                        android:checked="true"
-                        app:chipCornerRadius="24dp"/>
+                        android:checked="true" />
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chip_sort_views"
-                        style="@style/Widget.Material3.Chip.Filter"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Most Viewed"
-                        app:chipCornerRadius="24dp"/>
+                        android:layout_height="wrap_content" />
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chip_sort_date"
-                        style="@style/Widget.Material3.Chip.Filter"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Newest"
-                        app:chipCornerRadius="24dp"/>
+                        android:layout_height="wrap_content" />
                 </com.google.android.material.chip.ChipGroup>
             </HorizontalScrollView>
 
             <com.google.android.material.tabs.TabLayout
                 android:id="@+id/tab_layout"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginHorizontal="24dp"
-                android:layout_marginTop="24dp"
-                android:background="@drawable/bg_tab_layout"
-                android:visibility="gone"
-                app:tabIndicator="@drawable/tab_indicator_pill"
-                app:tabIndicatorColor="@color/primary_600"
-                app:tabIndicatorGravity="stretch"
-                app:tabIndicatorHeight="56dp"
-                app:tabSelectedTextColor="@color/white"
-                app:tabTextColor="@color/slate_600"
-                app:tabMode="fixed">
-
+                android:layout_height="0dp"
+                android:visibility="gone">
                 <com.google.android.material.tabs.TabItem android:text="Audiobooks" />
                 <com.google.android.material.tabs.TabItem android:text="Ebooks" />
                 <com.google.android.material.tabs.TabItem android:text="Community" />
             </com.google.android.material.tabs.TabLayout>
 
+            <!-- Section 1: Continue Listening / In Progress -->
             <LinearLayout
+                android:id="@+id/layout_section_inprogress"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="32dp"
-                android:layout_marginTop="32dp"
-                android:gravity="bottom"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="24dp"
+                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:fontFamily="sans-serif-bold"
-                    android:text="Trending Now"
-                    android:textColor="@color/slate_900"
-                    android:textSize="22sp" />
+                <View
+                    android:layout_width="4dp"
+                    android:layout_height="18dp"
+                    android:layout_marginEnd="10dp"
+                    android:background="@drawable/tab_indicator_pill" />
 
                 <TextView
-                    android:id="@+id/text_see_all"
+                    android:id="@+id/text_section_inprogress_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="See all"
-                    android:textColor="@color/accent_vibrant"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:fontFamily="sans-serif-black"
+                    android:text="Continue Listening"
+                    android:textColor="@color/slate_900"
+                    android:textSize="20sp" />
             </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler_trending"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:orientation="horizontal"
-                android:paddingHorizontal="32dp"
+                android:layout_marginTop="14dp"
                 android:clipToPadding="false"
+                android:orientation="horizontal"
+                android:paddingHorizontal="20dp"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- Section 2: Recommended Books (With See All Button) -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="32dp"
-                android:layout_marginTop="32dp"
-                android:fontFamily="sans-serif-bold"
-                android:text="Recommended for You"
-                android:textColor="@color/slate_900"
-                android:textSize="22sp" />
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="28dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:layout_width="4dp"
+                    android:layout_height="18dp"
+                    android:layout_marginEnd="10dp"
+                    android:background="@drawable/tab_indicator_pill" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="sans-serif-black"
+                    android:text="Recommended for You"
+                    android:textColor="@color/slate_900"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/text_see_all"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_category_pill"
+                    android:fontFamily="sans-serif-bold"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="5dp"
+                    android:text="See All ›"
+                    android:textColor="@color/primary_600"
+                    android:textSize="13sp" />
+            </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler_recommended"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginHorizontal="32dp"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="14dp"
+                android:clipToPadding="false"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
         </LinearLayout>
@@ -194,6 +224,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:indeterminateTint="@color/primary_600"
         android:visibility="gone" />
 
 </FrameLayout>

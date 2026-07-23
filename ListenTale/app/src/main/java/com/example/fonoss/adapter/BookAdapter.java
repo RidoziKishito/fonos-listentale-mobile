@@ -62,6 +62,15 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
         if (holder.duration != null) holder.duration.setText(book.getDuration());
         if (holder.pages != null) holder.pages.setText(book.getPages());
         
+        if (holder.progressBook != null) {
+            if (book.getProgressPercent() > 0) {
+                holder.progressBook.setVisibility(View.VISIBLE);
+                holder.progressBook.setProgress(book.getProgressPercent());
+            } else {
+                holder.progressBook.setVisibility(View.GONE);
+            }
+        }
+
         Glide.with(holder.itemView.getContext())
                 .load(book.getCoverUrl())
                 .placeholder(android.R.drawable.ic_menu_gallery)
@@ -164,6 +173,7 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
         ImageView cover, lockIcon;
         CheckBox checkBox;
         ImageButton buttonPlay, buttonRead;
+        android.widget.ProgressBar progressBook;
 
         public BookViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -177,6 +187,7 @@ public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder
             pages = itemView.findViewById(R.id.text_book_pages);
             buttonPlay = itemView.findViewById(R.id.button_play_item);
             buttonRead = itemView.findViewById(R.id.button_read_item);
+            progressBook = itemView.findViewById(R.id.progress_book);
         }
     }
 }
