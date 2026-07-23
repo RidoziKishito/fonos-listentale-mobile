@@ -37,6 +37,13 @@ import com.google.android.material.slider.Slider;
 import java.util.Locale;
 import java.util.Map;
 
+import com.example.fonoss.data.model.Bookmark;
+import com.example.fonoss.adapter.BookmarkAdapter;
+import com.example.fonoss.utils.UiNotifier;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.textfield.TextInputEditText;
+
 @AndroidEntryPoint
 public class AudioPlayerFragment extends Fragment {
 
@@ -51,6 +58,7 @@ public class AudioPlayerFragment extends Fragment {
     private boolean isBound = false;
     private Book currentBook;
     private LibraryViewModel libraryViewModel;
+    private BookmarkAdapter bookmarksDialogAdapter;
     
     private CountDownTimer sleepTimer;
     private long timerMillisRemaining = 0;
@@ -176,6 +184,16 @@ public class AudioPlayerFragment extends Fragment {
         buttonTimer.setOnClickListener(v -> showTimerDialog());
         textTimerCountdown.setOnClickListener(v -> showTimerDialog());
 
+        View btnAddBookmark = view.findViewById(R.id.button_player_add_bookmark);
+        if (btnAddBookmark != null) {
+            btnAddBookmark.setOnClickListener(v -> showAddBookmarkDialog());
+        }
+
+        View btnBookmarksList = view.findViewById(R.id.button_player_bookmarks);
+        if (btnBookmarksList != null) {
+            btnBookmarksList.setOnClickListener(v -> showBookmarksDialog());
+        }
+
         View btnAiChat = view.findViewById(R.id.button_player_ai_chat);
         if (btnAiChat != null) {
             btnAiChat.setOnClickListener(v -> {
@@ -208,6 +226,13 @@ public class AudioPlayerFragment extends Fragment {
         textPlayerAuthor.setText(currentBook.getAuthor());
         Glide.with(this).load(currentBook.getCoverUrl()).placeholder(android.R.drawable.ic_menu_gallery).into(imagePlayerArtwork);
         Glide.with(this).load(currentBook.getCoverUrl()).into(imagePlayerBg);
+
+        libraryViewModel.fetchBookmarks(currentBook.getId());
+        libraryViewModel.getBookmarks().observe(getViewLifecycleOwner(), bookmarks -> {
+            if (bookmarksDialogAdapter != null && bookmarks != null) {
+                bookmarksDialogAdapter.setBookmarks(bookmarks);
+            }
+        });
     }
 
     private int lastSavedPos = -1;
@@ -391,7 +416,98 @@ public class AudioPlayerFragment extends Fragment {
         }
     }
 
-    private String formatTime(int seconds) { return String.format(Locale.getDefault(), "%02d:%02d", seconds / 60, seconds % 60); }
+    private String formatTime(int seconds) {
+        if (seconds < 0) return "00:00";
+        int h = seconds / 3600;
+        int m = (seconds % 3600) / 60;
+        int s = seconds % 60;
+        if (h > 0) {
+            return String.format(Locale.getDefault(), "%02d:%02d:%02d", h, m, s);
+        }
+        return String.format(Locale.getDefault(), "%02d:%02d", m, s);
+    }
+
+    private void showAddBookmarkDialog() {
+        if (!isBound || audioService == null || currentBook == null) {
+            UiNotifier.warning(getContext(), "Audio chưa sẵn sàng");
+            return;
+        }
+        final int bookmarkPos = Math.max(0, audioService.getCurrentPosition());
+
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_add_audio_bookmark, null);
+        dialog.setContentView(dialogView);
+
+        TextView textTimestampInfo = dialogView.findViewById(R.id.text_bookmark_timestamp_info);
+        TextInputEditText inputNote = dialogView.findViewById(R.id.input_bookmark_note);
+        View btnCancel = dialogView.findViewById(R.id.button_cancel_bookmark);
+        View btnSave = dialogView.findViewById(R.id.button_save_bookmark);
+
+        String timeFormatted = formatTime(bookmarkPos);
+        textTimestampInfo.setText("Vị trí: " + timeFormatted);
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        btnSave.setOnClickListener(v -> {
+            String note = inputNote != null && inputNote.getText() != null ? inputNote.getText().toString().trim() : "";
+            Bookmark bookmark = new Bookmark(
+                    null,
+                    currentBook.getId(),
+                    bookmarkPos,
+                    note,
+                    System.currentTimeMillis()
+            );
+            libraryViewModel.saveBookmark(bookmark);
+            UiNotifier.success(getContext(), "Đã lưu mốc ghi nhớ (" + timeFormatted + ")");
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    private void showBookmarksDialog() {
+        if (currentBook == null) return;
+
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_bookmarks, null);
+        dialog.setContentView(dialogView);
+
+        RecyclerView recyclerView = dialogView.findViewById(R.id.recycler_bookmarks);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        BookmarkAdapter adapter = new BookmarkAdapter(new java.util.ArrayList<>(), new BookmarkAdapter.OnBookmarkClickListener() {
+            @Override
+            public void onBookmarkClick(Bookmark bookmark) {
+                if (bookmark.isAudioBookmark() && isBound && audioService != null) {
+                    audioService.seekTo(bookmark.getAudioPosition());
+                    saveCurrentPositionImmediately(false);
+                    updateUI();
+                    UiNotifier.info(getContext(), "Chuyển đến " + formatTime(bookmark.getAudioPosition()));
+                    dialog.dismiss();
+                }
+            }
+
+            @Override
+            public void onDeleteClick(Bookmark bookmark) {
+                libraryViewModel.deleteBookmark(bookmark.getId());
+                UiNotifier.info(getContext(), "Đã xóa mốc ghi nhớ");
+            }
+        });
+
+        recyclerView.setAdapter(adapter);
+        bookmarksDialogAdapter = adapter;
+        dialog.setOnDismissListener(d -> {
+            if (bookmarksDialogAdapter == adapter) {
+                bookmarksDialogAdapter = null;
+            }
+        });
+
+        java.util.List<Bookmark> currentBookmarks = libraryViewModel.getBookmarks().getValue();
+        if (currentBookmarks != null) {
+            adapter.setBookmarks(currentBookmarks);
+        }
+
+        dialog.show();
+    }
 
     @Override public void onStart() {
         super.onStart();

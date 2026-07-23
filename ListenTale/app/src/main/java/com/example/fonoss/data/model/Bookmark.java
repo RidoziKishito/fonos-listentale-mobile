@@ -10,6 +10,8 @@ public class Bookmark implements Serializable {
     private String selectedText;
     private int startOffset = -1;
     private int endOffset = -1;
+    private int audioPosition = -1;
+    private String note;
     private long timestamp;
 
     public Bookmark() {
@@ -29,6 +31,14 @@ public class Bookmark implements Serializable {
         this(id, bookId, chapterIndex, scrollY, selectedText, timestamp);
         this.startOffset = startOffset;
         this.endOffset = endOffset;
+    }
+
+    public Bookmark(String id, String bookId, int audioPosition, String note, long timestamp) {
+        this.id = id;
+        this.bookId = bookId;
+        this.audioPosition = audioPosition;
+        this.note = note;
+        this.timestamp = timestamp;
     }
 
     public String getId() { return id; }
@@ -51,6 +61,14 @@ public class Bookmark implements Serializable {
 
     public int getEndOffset() { return endOffset; }
     public void setEndOffset(int endOffset) { this.endOffset = endOffset; }
+
+    public int getAudioPosition() { return audioPosition; }
+    public void setAudioPosition(int audioPosition) { this.audioPosition = audioPosition; }
+
+    public String getNote() { return note; }
+    public void setNote(String note) { this.note = note; }
+
+    public boolean isAudioBookmark() { return audioPosition >= 0; }
 
     public long getTimestamp() { return timestamp; }
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }

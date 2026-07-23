@@ -30,24 +30,38 @@
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/white" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="sans-serif-bold"
-        android:text="Now Playing"
-        android:textColor="@color/white"
-        android:alpha="0.8"
-        app:layout_constraintBottom_toBottomOf="@id/button_player_back"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/button_player_back" />
+    <ImageButton
+        android:id="@+id/button_player_add_bookmark"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginTop="18dp"
+        android:layout_marginEnd="4dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_bookmark_add"
+        app:tint="@color/white"
+        app:layout_constraintEnd_toStartOf="@id/button_player_bookmarks"
+        app:layout_constraintTop_toTopOf="parent"
+        android:contentDescription="Add Bookmark" />
+
+    <ImageButton
+        android:id="@+id/button_player_bookmarks"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginTop="18dp"
+        android:layout_marginEnd="4dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_bookmark_list"
+        app:tint="@color/white"
+        app:layout_constraintEnd_toStartOf="@id/layout_timer_header"
+        app:layout_constraintTop_toTopOf="parent"
+        android:contentDescription="Bookmarks List" />
 
     <FrameLayout
         android:id="@+id/layout_timer_header"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="8dp"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginTop="18dp"
+        android:layout_marginEnd="4dp"
         app:layout_constraintEnd_toStartOf="@id/button_player_ai_chat"
         app:layout_constraintTop_toTopOf="parent">
         <ImageButton
@@ -71,9 +85,10 @@
 
     <ImageButton
         android:id="@+id/button_player_ai_chat"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_margin="16dp"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginTop="18dp"
+        android:layout_marginEnd="12dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_ai_sparkles"
         app:tint="@color/white"

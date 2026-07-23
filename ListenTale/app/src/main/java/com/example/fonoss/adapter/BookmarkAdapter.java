@@ -47,12 +47,33 @@ public class BookmarkAdapter extends RecyclerView.Adapter<BookmarkAdapter.ViewHo
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Bookmark bookmark = bookmarks.get(position);
-        holder.textChapter.setText("Chapter " + (bookmark.getChapterIndex() + 1));
-        holder.textContent.setText(bookmark.getSelectedText());
+        if (bookmark.isAudioBookmark()) {
+            String timeStr = formatTime(bookmark.getAudioPosition());
+            holder.textChapter.setText("📌 " + timeStr);
+            if (bookmark.getNote() != null && !bookmark.getNote().trim().isEmpty()) {
+                holder.textContent.setText(bookmark.getNote());
+            } else {
+                holder.textContent.setText("Bookmark at " + timeStr);
+            }
+        } else {
+            holder.textChapter.setText("Chapter " + (bookmark.getChapterIndex() + 1));
+            holder.textContent.setText(bookmark.getSelectedText());
+        }
         holder.textTime.setText(sdf.format(new Date(bookmark.getTimestamp())));
 
         holder.itemView.setOnClickListener(v -> listener.onBookmarkClick(bookmark));
         holder.buttonDelete.setOnClickListener(v -> listener.onDeleteClick(bookmark));
+    }
+
+    private String formatTime(int seconds) {
+        if (seconds < 0) return "00:00";
+        int h = seconds / 3600;
+        int m = (seconds % 3600) / 60;
+        int s = seconds % 60;
+        if (h > 0) {
+            return String.format(Locale.getDefault(), "%02d:%02d:%02d", h, m, s);
+        }
+        return String.format(Locale.getDefault(), "%02d:%02d", m, s);
     }
 
     @Override
