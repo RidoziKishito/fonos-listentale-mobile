@@ -15,6 +15,7 @@ public class Book implements Serializable {
     private String duration;
     private String pages;
     private double rating;
+    private long ratingCount;
     private String coverUrl;
     private String series;
     private transient List<String> chapters;
@@ -51,6 +52,10 @@ public class Book implements Serializable {
     public String getDuration() { return duration; }
     public String getPages() { return pages; }
     public double getRating() { return rating; }
+
+    @com.google.firebase.firestore.PropertyName("rating_count")
+    public long getRatingCount() { return ratingCount; }
+
     public String getCoverUrl() { return coverUrl; }
     public String getSeries() { return series; }
     public List<String> getChapters() { return chapters; }
@@ -69,6 +74,13 @@ public class Book implements Serializable {
     public void setDuration(String duration) { this.duration = duration; }
     public void setPages(String pages) { this.pages = pages; }
     public void setRating(double rating) { this.rating = rating; }
+
+    @com.google.firebase.firestore.PropertyName("rating_count")
+    public void setRatingCount(long ratingCount) { this.ratingCount = ratingCount; }
+
+    @com.google.firebase.firestore.PropertyName("ratingCount")
+    public void setRatingCountCamelCase(long ratingCount) { this.ratingCount = ratingCount; }
+
     public void setCoverUrl(String coverUrl) { this.coverUrl = coverUrl; }
 
     @com.google.firebase.firestore.PropertyName("cover_url")

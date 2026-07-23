@@ -128,9 +128,12 @@
                     android:textSize="24sp" />
 
                 <LinearLayout
+                    android:id="@+id/button_rate_book"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_rating_pill"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:gravity="center"
                     android:orientation="horizontal"
                     android:paddingHorizontal="10dp"
@@ -151,6 +154,15 @@
                         android:text="4.8"
                         android:textColor="@color/amber_500"
                         android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/text_rating_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:text="(0)"
+                        android:textColor="@color/slate_500"
+                        android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
 

@@ -47,8 +47,10 @@ public class BookDetailFragment extends Fragment {
 
     private Book currentBook;
     private LibraryViewModel libraryViewModel;
+    private RatingViewModel ratingViewModel;
     private ImageButton buttonFavorite, buttonDownload;
-    private View buttonListen, buttonRead;
+    private View buttonListen, buttonRead, buttonRateBook;
+    private TextView textBookRating, textRatingCount;
     private ProgressBar progressDownload;
     private View relatedBooksSection;
     private List<Book> relatedBooks = new ArrayList<>();
@@ -65,11 +67,16 @@ public class BookDetailFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         libraryViewModel = new ViewModelProvider(requireActivity()).get(LibraryViewModel.class);
+        ratingViewModel = new ViewModelProvider(this).get(RatingViewModel.class);
+
         buttonFavorite = view.findViewById(R.id.button_favorite);
         buttonDownload = view.findViewById(R.id.button_download);
         View buttonAddToPlaylist = view.findViewById(R.id.button_add_to_playlist);
         buttonListen = view.findViewById(R.id.button_listen);
         buttonRead = view.findViewById(R.id.button_read);
+        buttonRateBook = view.findViewById(R.id.button_rate_book);
+        textBookRating = view.findViewById(R.id.text_book_rating);
+        textRatingCount = view.findViewById(R.id.text_rating_count);
         progressDownload = view.findViewById(R.id.progress_download);
         relatedBooksSection = view.findViewById(R.id.section_related_books);
 
@@ -79,8 +86,26 @@ public class BookDetailFragment extends Fragment {
                 bindBookDetails(view);
                 setupRelatedBooks(view);
                 fetchRelatedBooks();
+                ratingViewModel.loadUserRating(currentBook.getId());
             }
         }
+
+        if (buttonRateBook != null) {
+            buttonRateBook.setOnClickListener(v -> showRatingDialog());
+        }
+
+        ratingViewModel.getToastMessage().observe(getViewLifecycleOwner(), msg -> {
+            if (msg != null) {
+                UiNotifier.info(getContext(), msg);
+                ratingViewModel.clearToastMessage();
+            }
+        });
+
+        ratingViewModel.getIsOperationSuccess().observe(getViewLifecycleOwner(), success -> {
+            if (Boolean.TRUE.equals(success) && currentBook != null) {
+                refreshBookRatingData();
+            }
+        });
 
         // Lắng nghe thay đổi từ Database để cập nhật UI ngay lập tức
         libraryViewModel.getSavedBooks().observe(getViewLifecycleOwner(), books -> updateFavoriteUI());
@@ -209,15 +234,141 @@ public class BookDetailFragment extends Fragment {
         if (currentBook == null) return;
         ((TextView)view.findViewById(R.id.text_book_title)).setText(currentBook.getTitle());
         ((TextView)view.findViewById(R.id.text_author)).setText(String.format("by %s", currentBook.getAuthor()));
-        ((TextView)view.findViewById(R.id.text_book_rating)).setText(String.format(Locale.getDefault(), "%.1f", currentBook.getRating()));
+
+        if (textBookRating == null) textBookRating = view.findViewById(R.id.text_book_rating);
+        if (textRatingCount == null) textRatingCount = view.findViewById(R.id.text_rating_count);
+
+        if (textBookRating != null) {
+            textBookRating.setText(String.format(Locale.getDefault(), "%.1f", currentBook.getRating()));
+        }
+        if (textRatingCount != null) {
+            textRatingCount.setText(String.format(Locale.getDefault(), "(%d)", currentBook.getRatingCount()));
+        }
+
         ((TextView)view.findViewById(R.id.text_audio_duration)).setText(currentBook.getDuration());
         ((TextView)view.findViewById(R.id.text_ebook_pages)).setText(currentBook.getPages());
         ((TextView)view.findViewById(R.id.text_book_genre)).setText(currentBook.getGenre());
         ((TextView)view.findViewById(R.id.text_synopsis)).setText(currentBook.getDescription());
         Glide.with(this).load(currentBook.getCoverUrl()).placeholder(android.R.drawable.ic_menu_gallery).into((ImageView) view.findViewById(R.id.image_cover_bg));
-        
+
         updateFavoriteUI();
         updateDownloadUI();
+    }
+
+    private void refreshBookRatingData() {
+        if (currentBook == null) return;
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("books")
+                .document(currentBook.getId())
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.exists()) {
+                        Double rating = snapshot.getDouble("rating");
+                        Long ratingCount = snapshot.getLong("rating_count");
+                        if (ratingCount == null) ratingCount = snapshot.getLong("ratingCount");
+
+                        if (rating != null) {
+                            currentBook.setRating(rating);
+                            if (textBookRating != null) {
+                                textBookRating.setText(String.format(Locale.getDefault(), "%.1f", rating));
+                            }
+                        }
+                        if (ratingCount != null) {
+                            currentBook.setRatingCount(ratingCount);
+                            if (textRatingCount != null) {
+                                textRatingCount.setText(String.format(Locale.getDefault(), "(%d)", ratingCount));
+                            }
+                        }
+                    }
+                    if (ratingViewModel != null) {
+                        ratingViewModel.resetOperationState();
+                    }
+                });
+    }
+
+    private void showRatingDialog() {
+        if (currentBook == null || getContext() == null) return;
+        if (ratingViewModel.getCurrentUserId() == null) {
+            UiNotifier.info(getContext(), getString(R.string.login_required_to_rate));
+            return;
+        }
+
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_rate_book, null);
+        dialog.setContentView(dialogView);
+
+        TextView textBookTitle = dialogView.findViewById(R.id.text_book_title);
+        android.widget.RatingBar ratingBar = dialogView.findViewById(R.id.rating_bar);
+        TextView textDescription = dialogView.findViewById(R.id.text_rating_description);
+        com.google.android.material.button.MaterialButton buttonSubmit = dialogView.findViewById(R.id.button_submit_rating);
+        com.google.android.material.button.MaterialButton buttonRemove = dialogView.findViewById(R.id.button_remove_rating);
+
+        if (textBookTitle != null) {
+            textBookTitle.setText(currentBook.getTitle());
+        }
+
+        Double existingUserRating = ratingViewModel.getUserRating().getValue();
+
+        if (existingUserRating != null && existingUserRating > 0) {
+            if (ratingBar != null) ratingBar.setRating(existingUserRating.floatValue());
+            if (buttonSubmit != null) buttonSubmit.setText(getString(R.string.update_rating));
+            if (buttonRemove != null) buttonRemove.setVisibility(View.VISIBLE);
+            updateRatingDescription(textDescription, existingUserRating.floatValue());
+        } else {
+            if (ratingBar != null) ratingBar.setRating(0);
+            if (buttonSubmit != null) buttonSubmit.setText(getString(R.string.submit_rating));
+            if (buttonRemove != null) buttonRemove.setVisibility(View.GONE);
+            if (textDescription != null) textDescription.setText("Tap a star to rate");
+        }
+
+        if (ratingBar != null) {
+            ratingBar.setOnRatingBarChangeListener((bar, rating, fromUser) -> updateRatingDescription(textDescription, rating));
+        }
+
+        if (buttonSubmit != null) {
+            buttonSubmit.setOnClickListener(v -> {
+                if (ratingBar == null || ratingBar.getRating() < 1) {
+                    UiNotifier.info(getContext(), getString(R.string.please_select_rating));
+                    return;
+                }
+                ratingViewModel.submitRating(currentBook.getId(), ratingBar.getRating());
+                dialog.dismiss();
+            });
+        }
+
+        if (buttonRemove != null) {
+            buttonRemove.setOnClickListener(v -> {
+                ratingViewModel.deleteRating(currentBook.getId());
+                dialog.dismiss();
+            });
+        }
+
+        dialog.show();
+    }
+
+    private void updateRatingDescription(TextView textView, float rating) {
+        if (textView == null) return;
+        int r = Math.round(rating);
+        switch (r) {
+            case 1:
+                textView.setText("1 Star - Poor");
+                break;
+            case 2:
+                textView.setText("2 Stars - Below Average");
+                break;
+            case 3:
+                textView.setText("3 Stars - Average");
+                break;
+            case 4:
+                textView.setText("4 Stars - Good");
+                break;
+            case 5:
+                textView.setText("5 Stars - Excellent!");
+                break;
+            default:
+                textView.setText("Tap a star to rate");
+                break;
+        }
     }
 
     private void startDownload() {

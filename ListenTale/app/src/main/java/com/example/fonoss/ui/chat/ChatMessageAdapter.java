@@ -11,6 +11,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.fonoss.R;
 import com.example.fonoss.data.model.ChatMessage;
 
+import io.noties.markwon.Markwon;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -25,6 +27,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     private List<ChatMessage> messageList = new ArrayList<>();
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+    private Markwon markwon;
 
     public void setMessages(List<ChatMessage> messages) {
         this.messageList = (messages != null) ? messages : new ArrayList<>();
@@ -44,6 +47,9 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+        if (markwon == null) {
+            markwon = Markwon.create(parent.getContext());
+        }
         if (viewType == TYPE_USER) {
             View view = inflater.inflate(R.layout.item_chat_message_user, parent, false);
             return new UserMessageViewHolder(view);
@@ -67,7 +73,11 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             uHolder.textTime.setText(timeStr);
         } else if (holder instanceof AiMessageViewHolder) {
             AiMessageViewHolder aiHolder = (AiMessageViewHolder) holder;
-            aiHolder.textBody.setText(message.getContent());
+            if (markwon != null) {
+                markwon.setMarkdown(aiHolder.textBody, message.getContent());
+            } else {
+                aiHolder.textBody.setText(message.getContent());
+            }
             aiHolder.textTime.setText(timeStr);
         } else if (holder instanceof SystemDividerViewHolder) {
             SystemDividerViewHolder sysHolder = (SystemDividerViewHolder) holder;

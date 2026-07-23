@@ -21,11 +21,13 @@ public class ChatRepository {
 
     private final Context context;
     private final ChatPermissionPolicy permissionPolicy;
+    private final com.example.fonoss.data.network.ChatApiService chatApiService;
 
     @Inject
-    public ChatRepository(@ApplicationContext Context context, ChatPermissionPolicy permissionPolicy) {
+    public ChatRepository(@ApplicationContext Context context, ChatPermissionPolicy permissionPolicy, com.example.fonoss.data.network.ChatApiService chatApiService) {
         this.context = context;
         this.permissionPolicy = permissionPolicy;
+        this.chatApiService = chatApiService;
     }
 
     public List<ChatSession> getAllSessions() {
@@ -94,5 +96,29 @@ public class ChatRepository {
             session.setUpdatedAt(System.currentTimeMillis());
             updateSession(session);
         }
+    }
+
+    public void updateMessageInSession(String sessionId, ChatMessage message) {
+        List<ChatMessage> messages = getMessagesForSession(sessionId);
+        for (int i = 0; i < messages.size(); i++) {
+            if (messages.get(i).getMessageId().equals(message.getMessageId())) {
+                messages.set(i, message);
+                break;
+            }
+        }
+        ChatLocalStorage.saveMessages(context, sessionId, messages);
+
+        // Update session last message & timestamp
+        ChatSession session = getSessionById(sessionId);
+        if (session != null) {
+            session.setLastMessage(message.getContent());
+            session.setUpdatedAt(System.currentTimeMillis());
+            updateSession(session);
+        }
+    }
+
+    public void askAiForBook(String bookId, String query, retrofit2.Callback<com.example.fonoss.data.network.model.ChatResponse> callback) {
+        com.example.fonoss.data.network.model.ChatRequest request = new com.example.fonoss.data.network.model.ChatRequest(bookId, query);
+        chatApiService.sendMessage(request).enqueue(callback);
     }
 }

@@ -4,12 +4,23 @@ plugins {
     alias(libs.plugins.hilt.android.plugin)
 }
 
+import java.util.Properties
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+
+val supabaseUrl = localProperties.getProperty("SUPABASE_URL", "")
+val supabaseKey = localProperties.getProperty("SUPABASE_KEY", "")
+
 android {
     namespace = "com.example.fonoss"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
+    compileSdk = 36
+
+    buildFeatures {
+        buildConfig = true
     }
 
     defaultConfig {
@@ -18,6 +29,9 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -67,5 +81,9 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     implementation(libs.hilt.android)
     annotationProcessor(libs.hilt.compiler)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.okhttp.logging.interceptor)
     implementation("org.tensorflow:tensorflow-lite:2.16.1")
+    implementation("io.noties.markwon:core:4.6.2")
 }
