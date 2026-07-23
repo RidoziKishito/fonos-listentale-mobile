@@ -111,6 +111,10 @@ public class EbookReaderFragment extends Fragment {
 
         if (getArguments() != null) {
             currentBook = (Book) getArguments().getSerializable("book");
+            if (getArguments().containsKey("chapterIndex")) {
+                currentChapter = getArguments().getInt("chapterIndex") + 1;
+                isInitialLoad = false;
+            }
             if (currentBook != null) {
                 textBookTitle.setText(currentBook.getTitle());
                 libraryViewModel.markAsInProgress(currentBook);
