@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.navigation.ui.ktx)
     implementation(libs.androidx.media)
     implementation(libs.androidx.work.runtime)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("com.vanniktech:android-image-cropper:4.6.0")
     testImplementation(libs.junit)

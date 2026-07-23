@@ -3,6 +3,7 @@ package com.example.fonoss.ui.library;
 import com.example.fonoss.R;
 import dagger.hilt.android.AndroidEntryPoint;
 
+import com.example.fonoss.ui.auth.UserViewModel;
 import com.example.fonoss.utils.UiNotifier;
 import com.example.fonoss.adapter.BookAdapter;
 import com.example.fonoss.adapter.PlaylistAdapter;
@@ -39,6 +40,7 @@ import java.util.Set;
 public class LibraryFragment extends Fragment {
 
     private LibraryViewModel libraryViewModel;
+    private UserViewModel userViewModel;
     private BookAdapter adapter;
     private PlaylistAdapter playlistAdapter;
     private List<Book> currentList = new ArrayList<>();
@@ -64,6 +66,7 @@ public class LibraryFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         libraryViewModel = new ViewModelProvider(requireActivity()).get(LibraryViewModel.class);
+        userViewModel = new ViewModelProvider(requireActivity()).get(UserViewModel.class);
         libraryViewModel.fetchLibraryData();
         
         recyclerView = view.findViewById(R.id.recycler_library);
@@ -119,6 +122,10 @@ public class LibraryFragment extends Fragment {
         });
         
         recyclerView.setAdapter(adapter);
+
+        userViewModel.getAccountType().observe(getViewLifecycleOwner(), type -> {
+            if (adapter != null) adapter.setUserAccountType(type);
+        });
 
         buttonToggleSelect.setOnClickListener(v -> toggleSelectionMode());
         buttonAddPlaylist.setOnClickListener(v -> showCreatePlaylistDialog());

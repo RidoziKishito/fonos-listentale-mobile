@@ -169,6 +169,8 @@ public class RegisterFragment extends Fragment {
         Map<String, Object> user = new HashMap<>();
         user.put("name", name != null ? name : "Google User");
         user.put("email", email);
+        user.put("accountType", "FREE");
+        user.put("upgradeDate", null);
         user.put("saved", new ArrayList<>());
         user.put("downloaded", new ArrayList<>());
         user.put("inProgress", new ArrayList<>());
@@ -230,6 +232,8 @@ public class RegisterFragment extends Fragment {
                         Map<String, Object> user = new HashMap<>();
                         user.put("name", nameStr);
                         user.put("email", emailStr);
+                        user.put("accountType", "FREE");
+                        user.put("upgradeDate", null);
                         
                         user.put("saved", new ArrayList<>());
                         user.put("downloaded", new ArrayList<>());

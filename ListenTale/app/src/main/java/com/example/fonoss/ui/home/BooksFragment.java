@@ -4,6 +4,7 @@ import com.example.fonoss.R;
 import dagger.hilt.android.AndroidEntryPoint;
 
 import com.example.fonoss.utils.UiNotifier;
+import com.example.fonoss.ui.auth.UserViewModel;
 import com.example.fonoss.adapter.BookAdapter;
 import com.example.fonoss.data.model.Book;
 import com.example.fonoss.manager.DownloadBookDialog;
@@ -39,6 +40,7 @@ public class BooksFragment extends Fragment {
     private BookAdapter recommendedAdapter;
     private FirebaseFirestore db;
     private ProgressBar loadingBar;
+    private UserViewModel userViewModel;
     private List<Book> rawTrendingBooks = new ArrayList<>();
     private List<Book> rawRecommendedBooks = new ArrayList<>();
     private List<String> userFavoriteGenres = new ArrayList<>();
@@ -56,6 +58,7 @@ public class BooksFragment extends Fragment {
         
         db = FirebaseFirestore.getInstance();
         loadingBar = view.findViewById(R.id.loading_bar);
+        userViewModel = new androidx.lifecycle.ViewModelProvider(requireActivity()).get(UserViewModel.class);
 
         com.google.android.material.chip.ChipGroup sortChipGroup = view.findViewById(R.id.chip_group_sort);
         sortChipGroup.setOnCheckedStateChangeListener((group, checkedIds) -> {
@@ -65,6 +68,11 @@ public class BooksFragment extends Fragment {
         view.findViewById(R.id.button_download_manager).setOnClickListener(v ->
                 new DownloadBookDialog().show(getChildFragmentManager(), "DownloadBookDialog"));
         
+        userViewModel.getAccountType().observe(getViewLifecycleOwner(), type -> {
+            if (trendingAdapter != null) trendingAdapter.setUserAccountType(type);
+            if (recommendedAdapter != null) recommendedAdapter.setUserAccountType(type);
+        });
+
         // Setup Trending
         trendingBooks = new ArrayList<>();
         RecyclerView recyclerTrending = view.findViewById(R.id.recycler_trending);

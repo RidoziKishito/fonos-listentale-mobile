@@ -4,6 +4,7 @@ import com.example.fonoss.R;
 import dagger.hilt.android.AndroidEntryPoint;
 
 import com.example.fonoss.utils.UiNotifier;
+import com.example.fonoss.ui.auth.UserViewModel;
 import com.example.fonoss.adapter.BookAdapter;
 import com.example.fonoss.data.model.Book;
 
@@ -28,6 +29,7 @@ public class SeeAllFragment extends Fragment {
 
     private List<Book> allBooks;
     private BookAdapter adapter;
+    private UserViewModel userViewModel;
     private FirebaseFirestore db;
     private ProgressBar loadingBar;
 
@@ -42,6 +44,7 @@ public class SeeAllFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         db = FirebaseFirestore.getInstance();
+        userViewModel = new androidx.lifecycle.ViewModelProvider(requireActivity()).get(UserViewModel.class);
         loadingBar = view.findViewById(R.id.loading_bar_see_all);
         
         allBooks = new ArrayList<>();
@@ -85,6 +88,10 @@ public class SeeAllFragment extends Fragment {
             }
         }, false); // Use card layout
         recyclerView.setAdapter(adapter);
+
+        userViewModel.getAccountType().observe(getViewLifecycleOwner(), type -> {
+            if (adapter != null) adapter.setUserAccountType(type);
+        });
 
         view.findViewById(R.id.button_see_all_back).setOnClickListener(v -> Navigation.findNavController(v).navigateUp());
 

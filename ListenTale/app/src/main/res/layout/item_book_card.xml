@@ -36,6 +36,16 @@
                 android:button="@drawable/sl_checkbox"
                 android:buttonTint="@null"
                 app:buttonTint="@null" />
+
+            <ImageView
+                android:id="@+id/image_premium_lock"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/ic_lock_lock"
+                android:visibility="gone"
+                app:tint="@color/white"
+                android:alpha="0.8" />
         </FrameLayout>
 
         <LinearLayout
