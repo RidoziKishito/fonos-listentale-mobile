@@ -153,11 +153,17 @@ public class ChatFragment extends Fragment {
                 UiNotifier.info(getContext(), msg);
             }
         });
+
+        chatViewModel.getIsGenerating().observe(getViewLifecycleOwner(), isGenerating -> {
+            updateInputState();
+        });
     }
 
     private void updateInputState() {
         Book activeBook = chatViewModel.getActiveBook().getValue();
         ChatSession session = chatViewModel.getCurrentSession().getValue();
+        Boolean isGenerating = chatViewModel.getIsGenerating().getValue();
+        if (isGenerating == null) isGenerating = false;
 
         boolean hasActiveBookAndSession = (session != null && activeBook != null);
 
@@ -166,13 +172,20 @@ public class ChatFragment extends Fragment {
             chatBookContextBar.setVisibility(View.VISIBLE);
         }
 
-        if (hasActiveBookAndSession) {
+        if (isGenerating) {
+            editTextInput.setEnabled(false);
+            buttonSend.setEnabled(false);
+            buttonSend.setImageResource(android.R.drawable.ic_media_pause);
+            buttonSend.setAlpha(0.4f);
+        } else if (hasActiveBookAndSession) {
             editTextInput.setEnabled(true);
             buttonSend.setEnabled(true);
+            buttonSend.setImageResource(android.R.drawable.ic_menu_send);
             buttonSend.setAlpha(1.0f);
         } else {
             editTextInput.setEnabled(false);
             buttonSend.setEnabled(false);
+            buttonSend.setImageResource(android.R.drawable.ic_menu_send);
             buttonSend.setAlpha(0.4f);
         }
     }

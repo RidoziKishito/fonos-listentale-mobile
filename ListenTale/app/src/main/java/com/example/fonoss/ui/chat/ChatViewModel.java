@@ -34,6 +34,7 @@ public class ChatViewModel extends ViewModel {
     private final MutableLiveData<List<Book>> availableBooks = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<Book> activeBook = new MutableLiveData<>();
     private final MutableLiveData<String> toastMessage = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> isGenerating = new MutableLiveData<>(false);
 
     @Inject
     public ChatViewModel(ChatRepository chatRepository, BookRepository bookRepository, ChatPermissionPolicy permissionPolicy) {
@@ -42,6 +43,10 @@ public class ChatViewModel extends ViewModel {
         this.permissionPolicy = permissionPolicy;
         this.db = bookRepository.getDb();
         loadAvailableBooks();
+    }
+
+    public LiveData<Boolean> getIsGenerating() {
+        return isGenerating;
     }
 
     public LiveData<List<ChatSession>> getSessions() {
@@ -190,33 +195,58 @@ public class ChatViewModel extends ViewModel {
         if (currentMsgs != null && !currentMsgs.isEmpty()) {
             for (int i = currentMsgs.size() - 1; i >= 0; i--) {
                 ChatMessage m = currentMsgs.get(i);
-                if (currentBookId.equals(m.getBookId())) {
-                    needDivider = false;
+                if (m.getBookId() != null && !m.getBookId().isEmpty()) {
+                    if (currentBookId.equals(m.getBookId())) {
+                        needDivider = false;
+                    }
                     break;
                 }
             }
         }
         if (needDivider) {
             String bookTitle = (book != null) ? book.getTitle() : "Book";
-            ChatMessage sysMsg = new ChatMessage(session.getSessionId(), currentBookId, ChatMessage.SENDER_SYSTEM, bookTitle);
+            String dividerText = "Asking about: " + bookTitle;
+            ChatMessage sysMsg = new ChatMessage(session.getSessionId(), currentBookId, ChatMessage.SENDER_SYSTEM, dividerText);
             chatRepository.addMessageToSession(session.getSessionId(), sysMsg);
         }
 
         // 1. Add User Message
         ChatMessage userMsg = new ChatMessage(session.getSessionId(), currentBookId, ChatMessage.SENDER_USER, text.trim());
         chatRepository.addMessageToSession(session.getSessionId(), userMsg);
-        loadMessagesForSession(session.getSessionId());
 
-        // 2. Mock AI response (will be replaced with backend API integration)
-        String bookTitle = (book != null) ? book.getTitle() : "this book";
-        String mockReply = "Thank you for asking about \"" + bookTitle + "\". I am Fonos AI Assistant. An automated response for \"" 
-                + text.trim() + "\" is being processed. (Backend API Integration Ready)";
-
-        ChatMessage aiMsg = new ChatMessage(session.getSessionId(), currentBookId, ChatMessage.SENDER_AI, mockReply);
+        // 2. Add Loading AI Message ("ListenTale AI is thinking...")
+        isGenerating.setValue(true);
+        ChatMessage aiMsg = new ChatMessage(session.getSessionId(), currentBookId, ChatMessage.SENDER_AI, "ListenTale AI is thinking...");
         chatRepository.addMessageToSession(session.getSessionId(), aiMsg);
         loadMessagesForSession(session.getSessionId());
-
         loadSessions(); // refresh updated order
+
+        // 3. Call Real API
+        chatRepository.askAiForBook(currentBookId, text.trim(), new retrofit2.Callback<com.example.fonoss.data.network.model.ChatResponse>() {
+            @Override
+            public void onResponse(retrofit2.Call<com.example.fonoss.data.network.model.ChatResponse> call, retrofit2.Response<com.example.fonoss.data.network.model.ChatResponse> response) {
+                isGenerating.postValue(false);
+                if (response.isSuccessful() && response.body() != null) {
+                    com.example.fonoss.data.network.model.ChatResponse chatResponse = response.body();
+                    String answer = (chatResponse != null && chatResponse.getAnswer() != null) ? chatResponse.getAnswer().trim() : "";
+                    aiMsg.setContent(answer);
+                } else {
+                    aiMsg.setContent("Sorry, ListenTale AI is temporarily unable to answer this question. Please try again later!");
+                }
+                chatRepository.updateMessageInSession(session.getSessionId(), aiMsg);
+                loadMessagesForSession(session.getSessionId());
+                loadSessions();
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<com.example.fonoss.data.network.model.ChatResponse> call, Throwable t) {
+                isGenerating.postValue(false);
+                aiMsg.setContent("Unable to connect to ListenTale AI. Please check your network connection!");
+                chatRepository.updateMessageInSession(session.getSessionId(), aiMsg);
+                loadMessagesForSession(session.getSessionId());
+                loadSessions();
+            }
+        });
     }
 
     private void loadMessagesForSession(String sessionId) {

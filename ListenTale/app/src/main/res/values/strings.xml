@@ -1,4 +1,15 @@
 <resources>
     <string name="app_name">fonoss</string>
     <string name="default_web_client_id">684065090542-g149kfpf5i6goqaf0v0okdc6kmtqh42p.apps.googleusercontent.com</string>
+    <string name="rate_this_book">Rate This Book</string>
+    <string name="your_rating">Your Rating</string>
+    <string name="submit_rating">Submit Rating</string>
+    <string name="update_rating">Update Rating</string>
+    <string name="remove_rating">Remove Rating</string>
+    <string name="rating_submitted_success">Rating submitted successfully!</string>
+    <string name="rating_updated_success">Rating updated successfully!</string>
+    <string name="rating_removed_success">Rating removed successfully!</string>
+    <string name="please_select_rating">Please select a rating between 1 and 5 stars.</string>
+    <string name="login_required_to_rate">Please log in to rate this book.</string>
+    <string name="no_ratings_yet">No ratings yet</string>
 </resources>
