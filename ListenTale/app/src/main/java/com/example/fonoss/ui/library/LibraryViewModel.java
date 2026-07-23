@@ -36,9 +36,10 @@ public class LibraryViewModel extends ViewModel {
     private final MutableLiveData<List<Book>> completedBooks = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<Map<String, Long>> bookProgressPos = new MutableLiveData<>(new HashMap<>());
     private final MutableLiveData<Map<String, Long>> bookProgressChapter = new MutableLiveData<>(new HashMap<>());
+    private final MutableLiveData<Long> totalListeningSeconds = new MutableLiveData<>(0L);
     private final MutableLiveData<List<Bookmark>> bookmarks = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<List<Playlist>> playlists = new MutableLiveData<>(new ArrayList<>());
-    private final Set<String> pendingDeletedDownloadIds = new HashSet<>();
+    private final Set<String> pendingDeletedDownloadIds = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     private final UserRepository userRepository;
     private final BookRepository bookRepository;
@@ -59,10 +60,23 @@ public class LibraryViewModel extends ViewModel {
     public LiveData<List<Book>> getCompletedBooks() { return completedBooks; }
     public LiveData<Map<String, Long>> getBookProgressPos() { return bookProgressPos; }
     public LiveData<Map<String, Long>> getBookProgressChapter() { return bookProgressChapter; }
+    public LiveData<Long> getTotalListeningSeconds() { return totalListeningSeconds; }
     public LiveData<List<Bookmark>> getBookmarks() { return bookmarks; }
     public LiveData<List<Playlist>> getPlaylists() { return playlists; }
     public LiveData<Map<String, Integer>> getDownloadProgress() {
         return DownloadQueueManager.getInstance(mAuth.getApp().getApplicationContext()).getProgressMap();
+    }
+
+    public void addListeningDuration(long seconds) {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null || seconds <= 0) return;
+
+        Long current = totalListeningSeconds.getValue();
+        long updated = (current != null ? current : 0L) + seconds;
+        totalListeningSeconds.postValue(updated);
+
+        db.collection("users").document(user.getUid())
+                .update("totalListeningSeconds", FieldValue.increment(seconds));
     }
     public void fetchLibraryData() {
         FirebaseUser user = mAuth.getCurrentUser();
@@ -83,6 +97,9 @@ public class LibraryViewModel extends ViewModel {
                         
                         Object chapterObj = snapshot.get("progressChapters");
                         if (chapterObj instanceof Map) bookProgressChapter.postValue((Map<String, Long>) chapterObj);
+
+                        Long totalSec = snapshot.getLong("totalListeningSeconds");
+                        if (totalSec != null) totalListeningSeconds.postValue(totalSec);
 
                         autoSyncDownloads(newlyDownloaded);
                     }
@@ -218,12 +235,13 @@ public class LibraryViewModel extends ViewModel {
     public void addDownload(Book book) { updateLibraryItem("downloaded", book, true); }
 
     public void enqueueSequentialDownloads(List<Book> books) {
-        if (books == null || books.isEmpty() || mAuth.getCurrentUser() == null) return;
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (books == null || books.isEmpty() || user == null || user.getUid() == null) return;
         for (Book book : books) {
             if (book != null && book.getId() != null) pendingDeletedDownloadIds.remove(book.getId());
         }
         DownloadQueueManager.getInstance(mAuth.getApp().getApplicationContext())
-                .enqueue(books, mAuth.getCurrentUser().getUid());
+                .enqueue(books, user.getUid());
     }
 
     public void cancelDownload(String bookId) {
@@ -242,17 +260,38 @@ public class LibraryViewModel extends ViewModel {
         else removeFromCollectionManual("downloaded", bookId);
     }
 
+    private long lastFirestoreSyncTime = 0;
+    private static final long FIRESTORE_SYNC_INTERVAL_MS = 60000; // 60s throttle to save Firebase Quota
+
     public void savePlaybackPosition(String bookId, int seconds) {
+        savePlaybackPosition(bookId, seconds, false);
+    }
+
+    public void savePlaybackPosition(String bookId, int seconds, boolean forceSyncToCloud) {
         FirebaseUser user = mAuth.getCurrentUser();
-        if (user == null) return;
-        Map<String, Object> update = new HashMap<>();
-        update.put("progressPositions." + bookId, (long)seconds);
-        db.collection("users").document(user.getUid()).set(update, SetOptions.merge());
+        if (user == null || bookId == null || seconds < 0) return;
+        if (isCompleted(bookId)) return;
+
+        // 1. Update local LiveData IMMEDIATELY (0ms lag, 0 Firebase calls)
+        Map<String, Long> currentMap = bookProgressPos.getValue();
+        Map<String, Long> newMap = currentMap != null ? new HashMap<>(currentMap) : new HashMap<>();
+        newMap.put(bookId, (long) seconds);
+        bookProgressPos.postValue(newMap);
+
+        // 2. Throttle Firestore Cloud Writes (Max 1 write per 60 seconds OR when forceSyncToCloud is true)
+        long now = System.currentTimeMillis();
+        if (forceSyncToCloud || (now - lastFirestoreSyncTime > FIRESTORE_SYNC_INTERVAL_MS)) {
+            lastFirestoreSyncTime = now;
+            Map<String, Object> update = new HashMap<>();
+            update.put("progressPositions." + bookId, (long) seconds);
+            db.collection("users").document(user.getUid()).set(update, SetOptions.merge());
+        }
     }
 
     public void saveReadingChapter(String bookId, int chapter) {
         FirebaseUser user = mAuth.getCurrentUser();
-        if (user == null) return;
+        if (user == null || bookId == null) return;
+        if (isCompleted(bookId)) return;
         Map<String, Object> update = new HashMap<>();
         update.put("progressChapters." + bookId, (long)chapter);
         db.collection("users").document(user.getUid()).set(update, SetOptions.merge());
@@ -261,7 +300,7 @@ public class LibraryViewModel extends ViewModel {
     public void fetchBookmarks(String bookId) {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user == null) return;
-        bookmarks.setValue(new ArrayList<>());
+        bookmarks.postValue(new ArrayList<>());
 
         java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor();
         db.collection("users").document(user.getUid())
@@ -477,14 +516,17 @@ public class LibraryViewModel extends ViewModel {
         }
         if (add) {
             Map<String, Object> bookMap = new HashMap<>();
-            bookMap.put("id", book.getId()); bookMap.put("title", book.getTitle());
-            bookMap.put("author", book.getAuthor()); 
-            bookMap.put("genre", book.getGenre());
-            bookMap.put("genres", book.getGenres());
-            bookMap.put("description", book.getDescription()); bookMap.put("duration", book.getDuration());
-            bookMap.put("pages", book.getPages()); bookMap.put("rating", book.getRating());
-            bookMap.put("coverUrl", book.getCoverUrl());
-            bookMap.put("series", book.getSeries());
+            if (book.getId() != null) bookMap.put("id", book.getId());
+            if (book.getTitle() != null) bookMap.put("title", book.getTitle());
+            if (book.getAuthor() != null) bookMap.put("author", book.getAuthor()); 
+            if (book.getGenre() != null) bookMap.put("genre", book.getGenre());
+            if (book.getGenres() != null) bookMap.put("genres", book.getGenres());
+            if (book.getDescription() != null) bookMap.put("description", book.getDescription());
+            if (book.getDuration() != null) bookMap.put("duration", book.getDuration());
+            if (book.getPages() != null) bookMap.put("pages", book.getPages());
+            bookMap.put("rating", book.getRating());
+            if (book.getCoverUrl() != null) bookMap.put("coverUrl", book.getCoverUrl());
+            if (book.getSeries() != null) bookMap.put("series", book.getSeries());
             db.collection("users").document(user.getUid()).update(collection, FieldValue.arrayUnion(bookMap));
         } else {
             removeFromCollectionManual(collection, book.getId());
@@ -558,6 +600,7 @@ public class LibraryViewModel extends ViewModel {
 
     public boolean isFavorite(String bookId) { return isInList(savedBooks.getValue(), bookId); }
     public boolean isDownloaded(String bookId) { return isInList(downloadedBooks.getValue(), bookId); }
+    public boolean isCompleted(String bookId) { return isInList(completedBooks.getValue(), bookId); }
     private boolean isInList(List<Book> list, String id) {
         if (list == null) return false;
         for (Book b : list) if (b.getId().equals(id)) return true;

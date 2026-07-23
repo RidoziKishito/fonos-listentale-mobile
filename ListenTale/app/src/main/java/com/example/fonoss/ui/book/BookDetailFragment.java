@@ -13,7 +13,9 @@ import com.example.fonoss.data.model.Playlist;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.net.ConnectivityManager;
+import android.net.Network;
 import android.net.NetworkCapabilities;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -77,6 +79,7 @@ public class BookDetailFragment extends Fragment {
 
         buttonFavorite = view.findViewById(R.id.button_favorite);
         buttonDownload = view.findViewById(R.id.button_download);
+        progressDownload = view.findViewById(R.id.progress_download);
         View buttonAddToPlaylist = view.findViewById(R.id.button_add_to_playlist);
         buttonListen = view.findViewById(R.id.button_listen);
         buttonRead = view.findViewById(R.id.button_read);
@@ -120,6 +123,12 @@ public class BookDetailFragment extends Fragment {
             updateDownloadUI();
             checkOfflineAvailability();
         });
+        libraryViewModel.getDownloadProgress().observe(getViewLifecycleOwner(), progressMap -> {
+            if (currentBook != null && progressMap != null) {
+                boolean downloading = progressMap.containsKey(currentBook.getId());
+                updateDownloadProgressUI(downloading);
+            }
+        });
 
         buttonFavorite.setOnClickListener(v -> { if (currentBook != null) libraryViewModel.toggleFavorite(currentBook); });
 
@@ -136,24 +145,16 @@ public class BookDetailFragment extends Fragment {
 
         buttonListen.setOnClickListener(v -> {
             if (currentBook == null) return;
-            if (isAvailable()) {
-                Bundle bundle = new Bundle();
-                bundle.putSerializable("book", currentBook);
-                Navigation.findNavController(v).navigate(R.id.action_bookDetailFragment_to_audioPlayerFragment, bundle);
-            } else {
-                UiNotifier.info(getContext(), "Connect to internet to listen to this book");
-            }
+            Bundle bundle = new Bundle();
+            bundle.putSerializable("book", currentBook);
+            Navigation.findNavController(v).navigate(R.id.action_bookDetailFragment_to_audioPlayerFragment, bundle);
         });
 
         buttonRead.setOnClickListener(v -> {
             if (currentBook == null) return;
-            if (isAvailable()) {
-                Bundle bundle = new Bundle();
-                bundle.putSerializable("book", currentBook);
-                Navigation.findNavController(v).navigate(R.id.action_bookDetailFragment_to_ebookReaderFragment, bundle);
-            } else {
-                UiNotifier.info(getContext(), "Connect to internet to read this book");
-            }
+            Bundle bundle = new Bundle();
+            bundle.putSerializable("book", currentBook);
+            Navigation.findNavController(v).navigate(R.id.action_bookDetailFragment_to_ebookReaderFragment, bundle);
         });
 
         view.findViewById(R.id.button_ai_chat).setOnClickListener(v -> {
@@ -301,10 +302,22 @@ public class BookDetailFragment extends Fragment {
     }
 
     private boolean isOnline() {
-        ConnectivityManager cm = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (cm == null) return false;
-        NetworkCapabilities capabilities = cm.getNetworkCapabilities(cm.getActiveNetwork());
-        return capabilities != null && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+        try {
+            ConnectivityManager cm = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm == null) return true;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                Network network = cm.getActiveNetwork();
+                if (network == null) return false;
+                NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
+                return capabilities != null && (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        || capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED));
+            } else {
+                android.net.NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+                return activeNetwork != null && activeNetwork.isConnected();
+            }
+        } catch (Exception e) {
+            return true;
+        }
     }
 
     private void bindBookDetails(View view) {
@@ -449,17 +462,8 @@ public class BookDetailFragment extends Fragment {
     }
 
     private void startDownload() {
-        updateDownloadProgressUI(true);
+        if (currentBook == null) return;
         libraryViewModel.enqueueSequentialDownloads(Collections.singletonList(currentBook));
-        observeDownloadStatus(currentBook.getId());
-    }
-
-    private void observeDownloadStatus(String bookId) {
-        libraryViewModel.getDownloadProgress().observe(getViewLifecycleOwner(), progressMap -> {
-            if (progressMap != null && !progressMap.containsKey(bookId)) {
-                updateDownloadProgressUI(false);
-            }
-        });
     }
 
     private void updateDownloadProgressUI(boolean downloading) {

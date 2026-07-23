@@ -49,6 +49,7 @@ import java.io.IOException;
 public class ProfileFragment extends Fragment {
 
     private UserViewModel userViewModel;
+    private LibraryViewModel libraryViewModel;
     private ImageView avatarImageView;
     private BottomSheetDialog bottomSheetDialog;
     private int lastImageSource = 0; // 1: Gallery, 2: Camera
@@ -157,7 +158,7 @@ public class ProfileFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         userViewModel = new ViewModelProvider(requireActivity()).get(UserViewModel.class);
-        LibraryViewModel libraryViewModel = new ViewModelProvider(requireActivity()).get(LibraryViewModel.class);
+        libraryViewModel = new ViewModelProvider(requireActivity()).get(LibraryViewModel.class);
         TextView textName = view.findViewById(R.id.text_profile_name);
         TextView textMembership = view.findViewById(R.id.text_profile_membership);
         avatarImageView = view.findViewById(R.id.image_profile_avatar);
@@ -203,6 +204,17 @@ public class ProfileFragment extends Fragment {
         avatarImageView.setOnClickListener(avatarClickListener);
         editIcon.setOnClickListener(avatarClickListener);
 
+        libraryViewModel.fetchLibraryData();
+
+        Runnable refreshStats = () -> updateDashboardStats(view, libraryViewModel);
+        refreshStats.run();
+        
+        libraryViewModel.getCompletedBooks().observe(getViewLifecycleOwner(), books -> refreshStats.run());
+        libraryViewModel.getInProgressBooks().observe(getViewLifecycleOwner(), books -> refreshStats.run());
+        libraryViewModel.getSavedBooks().observe(getViewLifecycleOwner(), books -> refreshStats.run());
+        libraryViewModel.getBookProgressPos().observe(getViewLifecycleOwner(), map -> refreshStats.run());
+        libraryViewModel.getTotalListeningSeconds().observe(getViewLifecycleOwner(), sec -> refreshStats.run());
+
         view.findViewById(R.id.button_account_info).setOnClickListener(v -> 
             Navigation.findNavController(v).navigate(R.id.action_profileFragment_to_accountInfoFragment)
         );
@@ -227,6 +239,147 @@ public class ProfileFragment extends Fragment {
                     .build();
             Navigation.findNavController(v).navigate(R.id.welcomeFragment, null, navOptions);
         });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (getView() != null && libraryViewModel != null) {
+            updateDashboardStats(getView(), libraryViewModel);
+        }
+    }
+
+    private void updateDashboardStats(View view, LibraryViewModel libraryViewModel) {
+        if (view == null || libraryViewModel == null) return;
+
+        TextView textRankTitle = view.findViewById(R.id.text_rank_title);
+        TextView textRankSubtitle = view.findViewById(R.id.text_rank_subtitle);
+        android.widget.ProgressBar progressRank = view.findViewById(R.id.progress_rank);
+        TextView textRankProgressStatus = view.findViewById(R.id.text_rank_progress_status);
+
+        TextView textStatHours = view.findViewById(R.id.text_stat_hours);
+        TextView textStatBooksCompleted = view.findViewById(R.id.text_stat_books_completed);
+        TextView textStatTopGenre = view.findViewById(R.id.text_stat_top_genre);
+
+        java.util.List<com.example.fonoss.data.model.Book> completed = libraryViewModel.getCompletedBooks().getValue();
+        int completedCount = (completed != null) ? completed.size() : 0;
+
+        Long listeningSecsObj = libraryViewModel.getTotalListeningSeconds().getValue();
+        double totalSeconds = (listeningSecsObj != null) ? listeningSecsObj.doubleValue() : 0.0;
+        double totalHours = totalSeconds / 3600.0;
+        int totalMinutes = (int) (totalSeconds / 60.0);
+
+        if (textStatHours != null) {
+            if (totalMinutes < 100) {
+                textStatHours.setText(String.format(java.util.Locale.getDefault(), "%dm", totalMinutes));
+            } else {
+                textStatHours.setText(String.format(java.util.Locale.getDefault(), "%.1fh", totalHours));
+            }
+        }
+        if (textStatBooksCompleted != null) {
+            textStatBooksCompleted.setText(String.valueOf(completedCount));
+        }
+
+        // Calculate Top Genre
+        String topGenre = "General";
+        java.util.Map<String, Integer> genreCount = new java.util.HashMap<>();
+        java.util.List<com.example.fonoss.data.model.Book> allUserBooks = new java.util.ArrayList<>();
+        if (completed != null) allUserBooks.addAll(completed);
+        java.util.List<com.example.fonoss.data.model.Book> inProgress = libraryViewModel.getInProgressBooks().getValue();
+        if (inProgress != null) allUserBooks.addAll(inProgress);
+        java.util.List<com.example.fonoss.data.model.Book> saved = libraryViewModel.getSavedBooks().getValue();
+        if (saved != null) allUserBooks.addAll(saved);
+
+        for (com.example.fonoss.data.model.Book b : allUserBooks) {
+            if (b != null && b.getGenre() != null && !b.getGenre().trim().isEmpty()) {
+                String g = b.getGenre().trim();
+                genreCount.put(g, genreCount.getOrDefault(g, 0) + 1);
+            }
+        }
+        int maxCount = 0;
+        for (java.util.Map.Entry<String, Integer> entry : genreCount.entrySet()) {
+            if (entry.getValue() > maxCount) {
+                maxCount = entry.getValue();
+                topGenre = entry.getKey();
+            }
+        }
+        if (textStatTopGenre != null) {
+            textStatTopGenre.setText(topGenre);
+        }
+
+        // Rank Progression Calculation (Lvl 1 - 7)
+        int rankLevel = 1;
+        String rankTitle = "Level 1 • Beginner";
+        String rankSubtitle = "The journey of a thousand pages begins";
+        String nextRankTitle = "Level 2 • Explorer";
+        int targetBooks = 3;
+        int targetHours = 5;
+
+        if (completedCount >= 100 || totalHours >= 300) {
+            rankLevel = 7;
+            rankTitle = "Level 7 • Legend";
+            rankSubtitle = "An extraordinary legacy of reading";
+            nextRankTitle = "Max Level Reached!";
+            targetBooks = 100;
+            targetHours = 300;
+        } else if (completedCount >= 50 || totalHours >= 150) {
+            rankLevel = 6;
+            rankTitle = "Level 6 • Luminary";
+            rankSubtitle = "A beacon of knowledge and stories";
+            nextRankTitle = "Level 7 • Legend";
+            targetBooks = 100;
+            targetHours = 300;
+        } else if (completedCount >= 30 || totalHours >= 75) {
+            rankLevel = 5;
+            rankTitle = "Level 5 • Scholar";
+            rankSubtitle = "Mastering wisdom through words";
+            nextRankTitle = "Level 6 • Luminary";
+            targetBooks = 50;
+            targetHours = 150;
+        } else if (completedCount >= 15 || totalHours >= 35) {
+            rankLevel = 4;
+            rankTitle = "Level 4 • Bibliophile";
+            rankSubtitle = "A true lover of literature";
+            nextRankTitle = "Level 5 • Scholar";
+            targetBooks = 30;
+            targetHours = 75;
+        } else if (completedCount >= 7 || totalHours >= 15) {
+            rankLevel = 3;
+            rankTitle = "Level 3 • Bookworm";
+            rankSubtitle = "Diving deeper into new worlds";
+            nextRankTitle = "Level 4 • Bibliophile";
+            targetBooks = 15;
+            targetHours = 35;
+        } else if (completedCount >= 3 || totalHours >= 5) {
+            rankLevel = 2;
+            rankTitle = "Level 2 • Explorer";
+            rankSubtitle = "Finding your rhythm in stories";
+            nextRankTitle = "Level 3 • Bookworm";
+            targetBooks = 7;
+            targetHours = 15;
+        }
+
+        int progressPercent = 0;
+        if (rankLevel == 7) {
+            progressPercent = 100;
+        } else {
+            double booksProgress = ((double) completedCount / targetBooks) * 100.0;
+            double hoursProgress = (totalHours / targetHours) * 100.0;
+            progressPercent = Math.min(100, (int) Math.max(booksProgress, hoursProgress));
+        }
+
+        if (textRankTitle != null) textRankTitle.setText(rankTitle);
+        if (textRankSubtitle != null) textRankSubtitle.setText(rankSubtitle);
+        if (progressRank != null) progressRank.setProgress(progressPercent);
+        if (textRankProgressStatus != null) {
+            if (rankLevel == 7) {
+                textRankProgressStatus.setText("100% • Legend Rank Achieved!");
+            } else {
+                textRankProgressStatus.setText(String.format(java.util.Locale.getDefault(),
+                        "%d%% to %s (%d/%d books completed)",
+                        progressPercent, nextRankTitle, completedCount, targetBooks));
+            }
+        }
     }
 
     private void showUpgradeDialog() {

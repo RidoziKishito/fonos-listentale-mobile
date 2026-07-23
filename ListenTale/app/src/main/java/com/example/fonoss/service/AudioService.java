@@ -49,6 +49,26 @@ public class AudioService extends Service {
     private MediaPlayer mediaPlayer;
     private NetworkChangeReceiver networkChangeReceiver;
 
+    private long playTimestamp = 0;
+    private long pendingListeningSeconds = 0;
+
+    public synchronized void accumulateActiveListening() {
+        if (isPlaying && playTimestamp > 0) {
+            long now = System.currentTimeMillis();
+            long deltaSec = (now - playTimestamp) / 1000;
+            if (deltaSec > 0) {
+                pendingListeningSeconds += deltaSec;
+                playTimestamp = now;
+            }
+        }
+    }
+
+    public synchronized long consumePendingListeningSeconds() {
+        long secs = pendingListeningSeconds;
+        pendingListeningSeconds = 0;
+        return secs;
+    }
+
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable progressRunnable = new Runnable() {
         @Override
@@ -219,7 +239,9 @@ public class AudioService extends Service {
 
     public void play() {
         if (currentBook == null || mediaPlayer == null) return;
+        accumulateActiveListening();
         isPlaying = true;
+        playTimestamp = System.currentTimeMillis();
         mediaPlayer.start();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
@@ -239,7 +261,9 @@ public class AudioService extends Service {
 
     public void pause() {
         if (currentBook == null || mediaPlayer == null) return;
+        accumulateActiveListening();
         isPlaying = false;
+        playTimestamp = 0;
         try {
             if (mediaPlayer.isPlaying()) mediaPlayer.pause();
         } catch (IllegalStateException e) {
@@ -265,11 +289,15 @@ public class AudioService extends Service {
     }
 
     public void seekTo(int seconds) {
+        accumulateActiveListening();
         if (mediaPlayer != null) {
             mediaPlayer.seekTo(seconds * 1000);
             currentPosition = seconds;
         } else {
             currentPosition = Math.max(0, Math.min(seconds, totalDuration));
+        }
+        if (isPlaying) {
+            playTimestamp = System.currentTimeMillis();
         }
         updatePlaybackState();
         startForeground(NOTIFICATION_ID, getNotification());

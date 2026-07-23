@@ -165,7 +165,9 @@ public class AudioPlayerFragment extends Fragment {
 
         playerSlider.addOnChangeListener((slider, value, fromUser) -> {
             if (fromUser && isBound && audioService != null) {
-                audioService.seekTo((int) (value * audioService.getTotalDuration() / 100));
+                int targetSec = (int) (value * audioService.getTotalDuration() / 100.0f);
+                audioService.seekTo(targetSec);
+                saveCurrentPositionImmediately(false);
                 updateUI();
             }
         });
@@ -208,28 +210,64 @@ public class AudioPlayerFragment extends Fragment {
         Glide.with(this).load(currentBook.getCoverUrl()).into(imagePlayerBg);
     }
 
+    private int lastSavedPos = -1;
+
     private void checkPlaybackStatus() {
         if (isBound && audioService != null && currentBook != null) {
             int pos = audioService.getCurrentPosition();
             int duration = audioService.getTotalDuration();
             
-            // Critical Fix: Only auto-save if playback has actually started
-            if (pos > 0 && pos % 10 == 0) {
+            if (pos > 0 && (lastSavedPos < 0 || Math.abs(pos - lastSavedPos) >= 3)) {
+                lastSavedPos = pos;
                 libraryViewModel.savePlaybackPosition(currentBook.getId(), pos);
             }
             
-            // Critical Fix: Only complete if duration is known and playback reached the end
-            if (duration > 0 && pos >= duration - 2) {
-                if (!libraryViewModel.isDownloaded(currentBook.getId()) || pos >= duration - 1) {
-                    libraryViewModel.markAsCompleted(currentBook);
-                }
+            if (duration > 0 && pos >= duration - 3) {
+                libraryViewModel.markAsCompleted(currentBook);
             }
+
+            audioService.accumulateActiveListening();
+            long deltaSec = audioService.consumePendingListeningSeconds();
+            if (deltaSec > 0 && libraryViewModel != null) {
+                libraryViewModel.addListeningDuration(deltaSec);
+            }
+        }
+    }
+
+    private void saveCurrentPositionImmediately(boolean forceCloudSync) {
+        if (isBound && audioService != null && currentBook != null) {
+            int pos = audioService.getCurrentPosition();
+            if (pos >= 0) {
+                lastSavedPos = pos;
+                libraryViewModel.savePlaybackPosition(currentBook.getId(), pos, forceCloudSync);
+            }
+            audioService.accumulateActiveListening();
+            long deltaSec = audioService.consumePendingListeningSeconds();
+            if (deltaSec > 0 && libraryViewModel != null) {
+                libraryViewModel.addListeningDuration(deltaSec);
+            }
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        saveCurrentPositionImmediately(true);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        saveCurrentPositionImmediately(true);
+        if (handler != null && updateProgressTask != null) {
+            handler.removeCallbacks(updateProgressTask);
         }
     }
 
     private void togglePlay() {
         if (isBound && audioService != null) {
             audioService.togglePlayPause();
+            saveCurrentPositionImmediately(!audioService.isPlaying());
             updatePlayPauseIcon();
             if (audioService.isPlaying()) {
                 handler.removeCallbacks(updateProgressTask);
@@ -250,6 +288,7 @@ public class AudioPlayerFragment extends Fragment {
         targetPosition = Math.max(0, targetPosition);
 
         audioService.seekTo(targetPosition);
+        saveCurrentPositionImmediately(false);
         updateUI();
     }
 

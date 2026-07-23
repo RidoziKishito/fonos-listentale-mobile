@@ -65,12 +65,24 @@ public class BooksFragment extends Fragment {
             applyCurrentSort();
         });
 
+        View btnUpgradeHeader = view.findViewById(R.id.button_upgrade_header);
+        if (btnUpgradeHeader != null) {
+            btnUpgradeHeader.setOnClickListener(v -> showUpgradeDialog());
+        }
+
         view.findViewById(R.id.button_download_manager).setOnClickListener(v ->
-                new DownloadBookDialog().show(getChildFragmentManager(), "DownloadBookDialog"));
+                Navigation.findNavController(v).navigate(R.id.action_booksFragment_to_downloadedBooksFragment));
         
         userViewModel.getAccountType().observe(getViewLifecycleOwner(), type -> {
             if (trendingAdapter != null) trendingAdapter.setUserAccountType(type);
             if (recommendedAdapter != null) recommendedAdapter.setUserAccountType(type);
+            if (btnUpgradeHeader != null) {
+                if ("PREMIUM".equals(type)) {
+                    btnUpgradeHeader.setVisibility(View.GONE);
+                } else {
+                    btnUpgradeHeader.setVisibility(View.VISIBLE);
+                }
+            }
         });
 
         // Setup Trending
@@ -294,5 +306,119 @@ public class BooksFragment extends Fragment {
 
     private String normalizeGenre(String genre) {
         return genre == null ? "" : genre.trim().toLowerCase(Locale.US);
+    }
+
+    private com.google.firebase.firestore.ListenerRegistration paymentListener;
+
+    private void showUpgradeDialog() {
+        com.google.firebase.auth.FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+
+        androidx.appcompat.app.AlertDialog loadingDialog = new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setMessage("Generating payment request...")
+                .setCancelable(false)
+                .show();
+
+        userViewModel.startUpgradeRequest(new com.example.fonoss.data.repository.UserRepository.UpgradeRequestCallback() {
+            @Override
+            public void onSuccess(org.json.JSONObject result) {
+                if (!isAdded()) return;
+                requireActivity().runOnUiThread(() -> {
+                    loadingDialog.dismiss();
+                    try {
+                        String qrUrl = result.getString("qrUrl");
+                        String paymentCode = result.getString("paymentCode");
+                        String bank = result.getString("bank");
+                        String accountNo = result.getString("accountNumber");
+                        String accountName = result.getString("accountName");
+                        int amount = result.getInt("amount");
+
+                        displayRealUpgradeDialog(qrUrl, paymentCode, bank, accountNo, accountName, amount);
+                    } catch (Exception e) {
+                        android.widget.Toast.makeText(getContext(), "Error parsing response", android.widget.Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String message) {
+                if (!isAdded()) return;
+                requireActivity().runOnUiThread(() -> {
+                    loadingDialog.dismiss();
+                    android.widget.Toast.makeText(getContext(), "Failed to create request: " + message, android.widget.Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+
+    private void displayRealUpgradeDialog(String qrUrl, String paymentCode, String bank, String accountNo, String accountName, int amount) {
+        if (!isAdded()) return;
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setView(getLayoutInflater().inflate(R.layout.dialog_upgrade_account, null))
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        dialog.show();
+
+        android.widget.ImageView qrImage = dialog.findViewById(R.id.image_qr_code);
+        android.widget.TextView memoText = dialog.findViewById(R.id.text_payment_memo);
+        android.widget.TextView bankText = dialog.findViewById(R.id.text_bank_info);
+        android.widget.TextView accountNoText = dialog.findViewById(R.id.text_account_number);
+        android.widget.TextView accountNameText = dialog.findViewById(R.id.text_account_name);
+        View btnPaid = dialog.findViewById(R.id.button_paid);
+        View btnCancel = dialog.findViewById(R.id.button_cancel);
+
+        if (memoText != null) memoText.setText("Memo: " + paymentCode);
+        if (bankText != null) bankText.setText("Bank: " + bank);
+        if (accountNoText != null) accountNoText.setText("Account: " + accountNo);
+        if (accountNameText != null) accountNameText.setText("Holder: " + accountName);
+
+        if (qrImage != null) com.bumptech.glide.Glide.with(this).load(qrUrl).into(qrImage);
+
+        if (btnCancel != null) btnCancel.setOnClickListener(view -> {
+            if (paymentListener != null) paymentListener.remove();
+            dialog.dismiss();
+        });
+
+        if (btnPaid != null) btnPaid.setOnClickListener(view -> {
+            btnPaid.setEnabled(false);
+            android.widget.Toast.makeText(getContext(), "Verifying payment simulation...", android.widget.Toast.LENGTH_SHORT).show();
+            
+            userViewModel.verifyAndUpgrade(aVoid -> {
+                if (paymentListener != null) paymentListener.remove();
+                dialog.dismiss();
+                if (isAdded()) {
+                    new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("Success (Simulation)")
+                            .setMessage("Your account has been upgraded to Premium for testing. Enjoy!")
+                            .setPositiveButton("Awesome", null)
+                            .show();
+                }
+            }, e -> {
+                btnPaid.setEnabled(true);
+                if (isAdded()) {
+                    android.widget.Toast.makeText(getContext(), "Simulation failed.", android.widget.Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
+        paymentListener = userViewModel.listenToPaymentStatus(paymentCode, aVoid -> {
+            if (paymentListener != null) paymentListener.remove();
+            dialog.dismiss();
+            if (isAdded()) {
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                        .setTitle("Upgrade Successful!")
+                        .setMessage("Welcome to Premium! Your account has been upgraded successfully.")
+                        .setPositiveButton("Explore Premium", null)
+                        .show();
+            }
+        });
+
+        dialog.setOnDismissListener(d -> {
+            if (paymentListener != null) paymentListener.remove();
+        });
     }
 }

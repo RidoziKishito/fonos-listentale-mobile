@@ -19,6 +19,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Fonoss"
+        android:usesCleartextTraffic="true"
         android:extractNativeLibs="true"
         tools:replace="android:extractNativeLibs">
 

@@ -65,6 +65,9 @@
         <action
             android:id="@+id/action_booksFragment_to_ebookReaderFragment"
             app:destination="@id/ebookReaderFragment" />
+        <action
+            android:id="@+id/action_booksFragment_to_downloadedBooksFragment"
+            app:destination="@id/downloadedBooksFragment" />
     </fragment>
 
     <fragment

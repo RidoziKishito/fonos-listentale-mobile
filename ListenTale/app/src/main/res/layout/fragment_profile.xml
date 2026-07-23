@@ -3,23 +3,27 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/slate_50"
+    android:background="@drawable/bg_app_gradient"
     android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingBottom="40dp">
 
+        <!-- Top Profile Header Glass Card -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/white"
-            android:elevation="4dp"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/bg_island_glass"
+            android:elevation="6dp"
             android:gravity="center"
             android:orientation="vertical"
-            android:paddingVertical="48dp"
-            android:backgroundTint="@color/white">
+            android:paddingHorizontal="24dp"
+            android:paddingVertical="28dp">
 
             <FrameLayout
                 android:layout_width="wrap_content"
@@ -28,24 +32,22 @@
 
                 <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/image_profile_avatar"
-                    android:layout_width="120dp"
-                    android:layout_height="120dp"
-                    android:padding="6dp"
+                    android:layout_width="104dp"
+                    android:layout_height="104dp"
+                    android:padding="3dp"
                     android:src="@android:drawable/sym_def_app_icon"
                     app:shapeAppearanceOverlay="@style/CircleImage"
-                    app:strokeColor="@color/primary_light"
-                    app:strokeWidth="6dp" />
+                    app:strokeColor="@color/primary_600"
+                    app:strokeWidth="3dp" />
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/icon_edit_avatar"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="bottom|end"
-                    android:layout_marginEnd="4dp"
-                    android:layout_marginBottom="4dp"
                     app:backgroundTint="@color/primary_600"
                     app:tint="@color/white"
-                    app:fabCustomSize="30dp"
+                    app:fabCustomSize="32dp"
                     android:src="@android:drawable/ic_menu_camera"
                     android:contentDescription="Edit avatar" />
             </FrameLayout>
@@ -54,171 +56,305 @@
                 android:id="@+id/text_profile_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="14dp"
                 android:fontFamily="sans-serif-black"
                 android:text="Alex Johnson"
                 android:textColor="@color/slate_900"
-                android:textSize="24sp" />
+                android:textSize="22sp" />
 
             <TextView
                 android:id="@+id/text_profile_membership"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="Premium Member"
-                android:textColor="@color/primary_600"
-                android:textStyle="bold"
-                android:textSize="16sp" />
+                android:background="@drawable/bg_badge_pill_glass"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="5dp"
+                android:text="PREMIUM MEMBER"
+                android:textColor="@color/primary_700"
+                android:textSize="12sp"
+                android:fontFamily="sans-serif-bold" />
+        </LinearLayout>
+
+        <!-- Rank & Linear Progress Glass Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/bg_island_glass"
+            android:elevation="6dp"
+            android:orientation="vertical"
+            android:padding="20dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:gravity="center"
+                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
+                <FrameLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_rank_icon_container"
+                    android:padding="10dp">
+
+                    <ImageView
+                        android:id="@+id/image_rank_badge"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:src="@android:drawable/btn_star_big_on"
+                        app:tint="@color/primary_600" />
+                </FrameLayout>
+
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
+                    android:layout_weight="1"
+                    android:layout_marginStart="14dp"
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/text_rank_title"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-black"
-                        android:text="124"
+                        android:text="Level 1 • Beginner"
                         android:textColor="@color/slate_900"
-                        android:textSize="22sp" />
+                        android:textSize="17sp" />
 
                     <TextView
+                        android:id="@+id/text_rank_subtitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Books"
-                        android:textColor="@color/slate_500"
-                        android:textSize="14sp" />
+                        android:layout_marginTop="2dp"
+                        android:text="The journey of a thousand pages begins"
+                        android:textColor="@color/slate_600"
+                        android:textSize="12sp" />
                 </LinearLayout>
+            </LinearLayout>
 
-                <View
-                    android:layout_width="1dp"
-                    android:layout_height="32dp"
-                    android:layout_marginHorizontal="32dp"
-                    android:background="@color/slate_200" />
+            <ProgressBar
+                android:id="@+id/progress_rank"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="10dp"
+                android:layout_marginTop="16dp"
+                android:progressDrawable="@drawable/bg_rank_progress_bar"
+                android:progress="35"
+                android:max="100" />
 
-                <LinearLayout
+            <TextView
+                android:id="@+id/text_rank_progress_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:fontFamily="sans-serif-bold"
+                android:text="35% to Level 2 • Explorer (1/3 books completed)"
+                android:textColor="@color/primary_700"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- Personal Dashboard Stats Grid -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal">
+
+            <!-- Card 1: Time Listened -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="80dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_island_glass"
+                android:elevation="4dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingHorizontal="4dp">
+
+                <TextView
+                    android:id="@+id/text_stat_hours"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:orientation="vertical">
+                    android:fontFamily="sans-serif-black"
+                    android:text="0m"
+                    android:textColor="@color/primary_700"
+                    android:textSize="18sp"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-black"
-                        android:text="45"
-                        android:textColor="@color/slate_900"
-                        android:textSize="22sp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="Listened"
+                    android:textColor="@color/slate_600"
+                    android:textSize="11sp" />
+            </LinearLayout>
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Reviews"
-                        android:textColor="@color/slate_500"
-                        android:textSize="14sp" />
-                </LinearLayout>
+            <!-- Card 2: Books Completed -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="80dp"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="4dp"
+                android:background="@drawable/bg_island_glass"
+                android:elevation="4dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingHorizontal="4dp">
+
+                <TextView
+                    android:id="@+id/text_stat_books_completed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-black"
+                    android:text="0"
+                    android:textColor="@color/primary_700"
+                    android:textSize="18sp"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="Completed"
+                    android:textColor="@color/slate_600"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <!-- Card 3: Top Genre -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="80dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_island_glass"
+                android:elevation="4dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingHorizontal="4dp">
+
+                <TextView
+                    android:id="@+id/text_stat_top_genre"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-black"
+                    android:text="General"
+                    android:textColor="@color/primary_700"
+                    android:textSize="15sp"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="Top Genre"
+                    android:textColor="@color/slate_600"
+                    android:textSize="11sp" />
             </LinearLayout>
         </LinearLayout>
 
+        <!-- Account Management Actions -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="32dp">
+            android:paddingHorizontal="20dp"
+            android:paddingTop="20dp">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/button_upgrade_account"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="match_parent"
-                android:layout_height="72dp"
-                android:layout_marginBottom="16dp"
+                android:layout_height="56dp"
+                android:layout_marginBottom="12dp"
                 android:backgroundTint="@color/primary_600"
                 android:gravity="start|center_vertical"
                 android:text="Upgrade Account"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textStyle="bold"
-                app:cornerRadius="24dp"
+                app:cornerRadius="16dp"
                 app:icon="@android:drawable/btn_star_big_on"
-                app:iconSize="24dp"
+                app:iconSize="20dp"
                 app:iconTint="@color/white" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/button_account_info"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="match_parent"
-                android:layout_height="72dp"
-                android:layout_marginBottom="16dp"
+                android:layout_height="56dp"
+                android:layout_marginBottom="12dp"
                 android:backgroundTint="@color/white"
                 android:gravity="start|center_vertical"
-                android:text="Account Info"
+                android:text="Account Information"
                 android:textAllCaps="false"
-                android:textColor="@color/slate_800"
-                android:textSize="16sp"
-                app:cornerRadius="24dp"
+                android:textColor="@color/slate_900"
+                android:textSize="15sp"
+                app:cornerRadius="16dp"
                 app:icon="@android:drawable/ic_menu_myplaces"
-                app:iconSize="24dp"
+                app:iconSize="20dp"
                 app:iconTint="@color/primary_600" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/button_downloaded"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="match_parent"
-                android:layout_height="72dp"
-                android:layout_marginBottom="16dp"
+                android:layout_height="56dp"
+                android:layout_marginBottom="12dp"
                 android:backgroundTint="@color/white"
                 android:gravity="start|center_vertical"
-                android:text="Downloaded"
+                android:text="Downloaded Books"
                 android:textAllCaps="false"
-                android:textColor="@color/slate_800"
-                android:textSize="16sp"
-                app:cornerRadius="24dp"
+                android:textColor="@color/slate_900"
+                android:textSize="15sp"
+                app:cornerRadius="16dp"
                 app:icon="@android:drawable/stat_sys_download_done"
-                app:iconSize="24dp"
+                app:iconSize="20dp"
                 app:iconTint="@color/primary_600" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/button_settings"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="match_parent"
-                android:layout_height="72dp"
-                android:layout_marginBottom="16dp"
+                android:layout_height="56dp"
+                android:layout_marginBottom="12dp"
                 android:backgroundTint="@color/white"
                 android:gravity="start|center_vertical"
                 android:text="Settings"
                 android:textAllCaps="false"
-                android:textColor="@color/slate_800"
-                android:textSize="16sp"
-                app:cornerRadius="24dp"
+                android:textColor="@color/slate_900"
+                android:textSize="15sp"
+                app:cornerRadius="16dp"
                 app:icon="@android:drawable/ic_menu_manage"
-                app:iconSize="24dp"
+                app:iconSize="20dp"
                 app:iconTint="@color/primary_600" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/button_logout"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="match_parent"
-                android:layout_height="72dp"
-                android:layout_marginTop="16dp"
+                android:layout_height="56dp"
+                android:layout_marginTop="8dp"
                 android:backgroundTint="@color/red_50"
                 android:gravity="start|center_vertical"
                 android:text="Log Out"
                 android:textAllCaps="false"
                 android:textColor="@color/red_600"
-                android:textSize="16sp"
-                app:cornerRadius="24dp"
+                android:textSize="15sp"
+                app:cornerRadius="16dp"
                 app:icon="@android:drawable/ic_lock_power_off"
-                app:iconSize="24dp"
+                app:iconSize="20dp"
                 app:iconTint="@color/red_600" />
         </LinearLayout>
     </LinearLayout>
