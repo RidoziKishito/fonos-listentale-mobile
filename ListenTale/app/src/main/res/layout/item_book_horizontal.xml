@@ -3,26 +3,27 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="16dp"
-    app:cardBackgroundColor="@color/surface_card"
-    app:cardCornerRadius="18dp"
-    app:cardElevation="2dp"
-    app:strokeColor="@color/outline_soft"
-    app:strokeWidth="1dp">
+    android:layout_marginBottom="12dp"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="3dp"
+    app:strokeColor="@color/slate_100"
+    app:strokeWidth="1.5dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="14dp">
+        android:padding="12dp">
 
         <FrameLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content">
+
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/image_book_cover"
-                android:layout_width="88dp"
-                android:layout_height="110dp"
+                android:layout_width="80dp"
+                android:layout_height="100dp"
                 android:scaleType="centerCrop"
                 android:src="@android:drawable/ic_menu_gallery"
                 app:shapeAppearanceOverlay="@style/RoundedImage" />
@@ -52,7 +53,7 @@
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="14dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
@@ -65,8 +66,7 @@
                 android:maxLines="1"
                 android:text="Book Title"
                 android:textColor="@color/slate_900"
-                android:textStyle="bold"
-                android:textSize="19sp" />
+                android:textSize="17sp" />
 
             <TextView
                 android:id="@+id/text_book_author"
@@ -76,13 +76,14 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="Author Name"
-                android:textColor="@color/slate_600"
-                android:textSize="15sp" />
+                android:textColor="@color/slate_500"
+                android:textSize="14sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="6dp"
+                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
@@ -93,7 +94,12 @@
                     android:textColor="@color/slate_400"
                     android:textSize="12sp" />
 
-                <View android:layout_width="1dp" android:layout_height="12dp" android:background="@color/slate_200" android:layout_marginHorizontal="8dp" android:layout_gravity="center_vertical"/>
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="12dp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginHorizontal="8dp"
+                    android:background="@color/slate_200" />
 
                 <TextView
                     android:id="@+id/text_book_pages"
@@ -110,20 +116,20 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/bg_category_pill"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="2dp"
+                android:fontFamily="sans-serif-bold"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="3dp"
                 android:text="Fantasy"
                 android:textColor="@color/primary_600"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:textSize="11sp" />
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
+            android:layout_marginStart="8dp"
             android:gravity="center"
-            android:orientation="vertical"
-            android:layout_marginStart="8dp">
+            android:orientation="vertical">
 
             <ImageButton
                 android:id="@+id/button_play_item"
@@ -141,7 +147,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Read book"
                 android:src="@drawable/ic_read_book"
-                app:tint="@color/violet_600" />
+                app:tint="@color/primary_600" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

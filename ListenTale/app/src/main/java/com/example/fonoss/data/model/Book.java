@@ -23,6 +23,10 @@ public class Book implements Serializable {
     private long views;
     private long publishDate;
     private boolean isPremium;
+    private int progressPercent = 0;
+
+    public int getProgressPercent() { return progressPercent; }
+    public void setProgressPercent(int progressPercent) { this.progressPercent = progressPercent; }
 
     public Book() {
         this.chapters = new ArrayList<>();

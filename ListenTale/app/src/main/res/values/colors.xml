@@ -37,6 +37,17 @@
     <color name="red_50">#FEF2F2</color>
     <color name="red_600">#DC2626</color>
 
+    <!-- Glassmorphic & Modern Polish Tokens -->
+    <color name="glass_white_80">#CCFFFFFF</color>
+    <color name="glass_white_60">#99FFFFFF</color>
+    <color name="glass_white_40">#66FFFFFF</color>
+    <color name="glass_white_20">#33FFFFFF</color>
+    <color name="glass_dark_10">#1A000000</color>
+    <color name="glass_dark_20">#33000000</color>
+    <color name="card_stroke_light">#E0F2FE</color>
+    <color name="primary_glow">#4D0D9488</color>
+    <color name="accent_glow">#4DFF6B6B</color>
+
     <!-- Legacy Compatibility -->
     <color name="violet_50">@color/primary_light</color>
     <color name="violet_100">@color/primary_200</color>

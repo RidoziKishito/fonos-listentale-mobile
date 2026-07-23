@@ -255,9 +255,9 @@
             android:layout_width="80dp"
             android:layout_height="80dp"
             android:layout_marginHorizontal="16dp"
-            app:cardBackgroundColor="@color/white"
+            app:cardBackgroundColor="@color/primary_600"
             app:cardCornerRadius="40dp"
-            app:cardElevation="8dp"
+            app:cardElevation="12dp"
             app:strokeWidth="0dp">
             <ImageButton
                 android:id="@+id/fab_play_pause"
@@ -266,7 +266,7 @@
                 android:background="@null"
                 android:scaleType="centerInside"
                 android:src="@android:drawable/ic_media_play"
-                app:tint="@color/slate_900" />
+                app:tint="@color/white" />
         </com.google.android.material.card.MaterialCardView>
 
         <FrameLayout

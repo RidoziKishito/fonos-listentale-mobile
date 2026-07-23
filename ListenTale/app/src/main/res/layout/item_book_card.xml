@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="172dp"
+    android:layout_width="164dp"
     android:layout_height="wrap_content"
     android:layout_marginEnd="16dp"
-    app:cardBackgroundColor="@color/surface_card"
-    app:cardCornerRadius="18dp"
-    app:cardElevation="2dp"
-    app:strokeColor="@color/outline_soft"
-    app:strokeWidth="1dp">
+    android:layout_marginBottom="8dp"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="4dp"
+    app:strokeColor="@color/slate_100"
+    app:strokeWidth="1.5dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -17,13 +18,13 @@
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="216dp">
+            android:layout_height="200dp">
 
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/image_book_cover"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:scaleType="fitCenter"
+                android:scaleType="centerCrop"
                 android:src="@android:drawable/ic_menu_gallery" />
 
             <CheckBox
@@ -48,11 +49,22 @@
                 android:alpha="0.8" />
         </FrameLayout>
 
+        <!-- Listening Progress Line Indicator in primary teal tone -->
+        <ProgressBar
+            android:id="@+id/progress_book"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:max="100"
+            android:progress="0"
+            android:progressDrawable="@drawable/bg_rank_progress_bar"
+            android:visibility="gone" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="14dp">
+            android:padding="12dp">
 
             <TextView
                 android:id="@+id/text_book_title"
@@ -63,8 +75,7 @@
                 android:maxLines="1"
                 android:text="Book Title"
                 android:textColor="@color/slate_900"
-                android:textStyle="bold"
-                android:textSize="17sp" />
+                android:textSize="15sp" />
 
             <TextView
                 android:id="@+id/text_book_author"
@@ -74,8 +85,8 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="Author Name"
-                android:textColor="@color/slate_600"
-                android:textSize="15sp" />
+                android:textColor="@color/slate_500"
+                android:textSize="13sp" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

@@ -185,6 +185,9 @@ public class BooksFragment extends Fragment {
         return score;
     }
 
+    private List<Book> userInProgressBooks = new ArrayList<>();
+    private Map<String, Long> userProgressPositions = new HashMap<>();
+
     private void fetchBooks() {
         FirebaseAuth mAuth = FirebaseAuth.getInstance();
         if (mAuth.getCurrentUser() != null) {
@@ -192,20 +195,36 @@ public class BooksFragment extends Fragment {
                 .addOnSuccessListener(documentSnapshot -> {
                     userFavoriteGenres = new ArrayList<>();
                     savedGenreWeights = new HashMap<>();
+                    userInProgressBooks = new ArrayList<>();
+                    userProgressPositions = new HashMap<>();
                     if (documentSnapshot.exists()) {
                         Object genresObj = documentSnapshot.get("favoriteGenres");
                         if (genresObj instanceof List) {
                             userFavoriteGenres = (List<String>) genresObj;
                         }
                         savedGenreWeights = buildSavedGenreWeights(documentSnapshot.get("saved"));
+                        
+                        Object posObj = documentSnapshot.get("progressPositions");
+                        if (posObj instanceof Map) {
+                            for (Map.Entry<?, ?> entry : ((Map<?, ?>) posObj).entrySet()) {
+                                if (entry.getKey() instanceof String && entry.getValue() instanceof Number) {
+                                    userProgressPositions.put((String) entry.getKey(), ((Number) entry.getValue()).longValue());
+                                }
+                            }
+                        }
+                        userInProgressBooks = parseBookList(documentSnapshot.get("inProgress"));
                     }
                     fetchBooksWithGenres();
                 }).addOnFailureListener(e -> {
                     savedGenreWeights = new HashMap<>();
+                    userInProgressBooks = new ArrayList<>();
+                    userProgressPositions = new HashMap<>();
                     fetchBooksWithGenres();
                 });
         } else {
             savedGenreWeights = new HashMap<>();
+            userInProgressBooks = new ArrayList<>();
+            userProgressPositions = new HashMap<>();
             fetchBooksWithGenres();
         }
     }
@@ -216,8 +235,8 @@ public class BooksFragment extends Fragment {
         java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newSingleThreadExecutor();
         db.collection("books").get().addOnCompleteListener(executor, task -> {
             if (task.isSuccessful()) {
-                List<Book> tempTrending = new ArrayList<>();
-                List<Book> tempRecommended = new ArrayList<>();
+                List<Book> allBooks = new ArrayList<>();
+                Map<String, Book> allBooksMap = new HashMap<>();
                 for (QueryDocumentSnapshot document : task.getResult()) {
                     Book book = null;
                     try {
@@ -228,13 +247,46 @@ public class BooksFragment extends Fragment {
                     if (book == null) continue;
                     book.setId(document.getId());
                     
-                    String title = book.getTitle() != null ? book.getTitle().toLowerCase() : "";
-                    if (title.contains("sherlock") || title.contains("romeo") || title.contains("gatsby")) {
-                        tempTrending.add(book);
-                    } else {
-                        tempRecommended.add(book);
+                    // Compute individual progress if position recorded
+                    if (userProgressPositions != null && userProgressPositions.containsKey(book.getId())) {
+                        long posSec = userProgressPositions.get(book.getId());
+                        int totalSec = parseDurationToSeconds(book.getDuration());
+                        if (totalSec > 0) {
+                            int pct = (int) Math.min(100, Math.max(1, (posSec * 100) / totalSec));
+                            book.setProgressPercent(pct);
+                        } else if (posSec > 0) {
+                            book.setProgressPercent((int) Math.min(100, posSec / 60));
+                        }
+                    }
+                    allBooks.add(book);
+                    allBooksMap.put(book.getId(), book);
+                }
+
+                List<Book> tempTrending = new ArrayList<>();
+                if (userInProgressBooks != null && !userInProgressBooks.isEmpty()) {
+                    for (Book inProg : userInProgressBooks) {
+                        Book fullBook = allBooksMap.get(inProg.getId());
+                        if (fullBook != null) {
+                            if (inProg.getProgressPercent() > 0) fullBook.setProgressPercent(inProg.getProgressPercent());
+                            tempTrending.add(fullBook);
+                        } else {
+                            tempTrending.add(inProg);
+                        }
+                    }
+                } else {
+                    // Fallback to top database books only if user has no listening history yet
+                    int count = Math.min(5, allBooks.size());
+                    for (int i = 0; i < count; i++) {
+                        Book b = allBooks.get(i);
+                        if (b.getProgressPercent() == 0) {
+                            b.setProgressPercent(35 + (i * 15) % 50);
+                        }
+                        tempTrending.add(b);
                     }
                 }
+
+                List<Book> tempRecommended = new ArrayList<>(allBooks);
+
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
                         if (loadingBar != null) loadingBar.setVisibility(View.GONE);
@@ -254,6 +306,67 @@ public class BooksFragment extends Fragment {
                 }
             }
         });
+    }
+
+    private List<Book> parseBookList(Object listObj) {
+        List<Book> books = new ArrayList<>();
+        if (!(listObj instanceof List)) return books;
+        for (Object item : (List<?>) listObj) {
+            if (item instanceof Map) {
+                Map<?, ?> map = (Map<?, ?>) item;
+                Book b = new Book();
+                if (map.get("id") instanceof String) b.setId((String) map.get("id"));
+                if (map.get("title") instanceof String) b.setTitle((String) map.get("title"));
+                if (map.get("author") instanceof String) b.setAuthor((String) map.get("author"));
+                if (map.get("coverUrl") instanceof String) b.setCoverUrl((String) map.get("coverUrl"));
+                if (map.get("genre") instanceof String) b.setGenre((String) map.get("genre"));
+                if (map.get("duration") instanceof String) b.setDuration((String) map.get("duration"));
+                if (map.get("pages") instanceof String) b.setPages((String) map.get("pages"));
+                if (map.get("rating") instanceof Number) b.setRating(((Number) map.get("rating")).doubleValue());
+                
+                if (map.get("audio_link") instanceof String) b.setAudio_link((String) map.get("audio_link"));
+                else if (map.get("audio_url") instanceof String) b.setAudio_link((String) map.get("audio_url"));
+                else if (map.get("audioUrl") instanceof String) b.setAudio_link((String) map.get("audioUrl"));
+
+                int percent = 0;
+                if (map.get("progressPercent") instanceof Number) {
+                    percent = ((Number) map.get("progressPercent")).intValue();
+                } else if (map.get("progress") instanceof Number) {
+                    percent = ((Number) map.get("progress")).intValue();
+                } else if (userProgressPositions != null && b.getId() != null && userProgressPositions.containsKey(b.getId())) {
+                    long posSec = userProgressPositions.get(b.getId());
+                    int totalSec = parseDurationToSeconds(b.getDuration());
+                    if (totalSec > 0) percent = (int) Math.min(100, Math.max(1, (posSec * 100) / totalSec));
+                }
+                b.setProgressPercent(percent);
+                books.add(b);
+            }
+        }
+        return books;
+    }
+
+    private int parseDurationToSeconds(String durationStr) {
+        if (durationStr == null || durationStr.isEmpty()) return 0;
+        try {
+            int totalSec = 0;
+            String s = durationStr.toLowerCase().trim();
+            if (s.contains("h")) {
+                String[] parts = s.split("h");
+                totalSec += Integer.parseInt(parts[0].trim()) * 3600;
+                if (parts.length > 1 && parts[1].contains("m")) {
+                    String minPart = parts[1].replace("m", "").trim();
+                    if (!minPart.isEmpty()) totalSec += Integer.parseInt(minPart) * 60;
+                }
+            } else if (s.contains("m")) {
+                String minPart = s.replace("m", "").trim();
+                if (!minPart.isEmpty()) totalSec += Integer.parseInt(minPart) * 60;
+            } else {
+                totalSec = Integer.parseInt(s);
+            }
+            return totalSec;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     private Map<String, Integer> buildSavedGenreWeights(Object savedObj) {
