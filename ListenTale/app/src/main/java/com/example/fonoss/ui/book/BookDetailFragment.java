@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 
 @AndroidEntryPoint
@@ -63,6 +64,9 @@ public class BookDetailFragment extends Fragment {
     private List<Book> recommendedBooks = new ArrayList<>();
     private BookAdapter seriesBooksAdapter;
     private BookAdapter recommendedBooksAdapter;
+    private View buttonChapterDropdown;
+    private TextView textSelectedChapterName;
+    private List<String> chapterList = new ArrayList<>();
 
     @Nullable
     @Override
@@ -83,6 +87,8 @@ public class BookDetailFragment extends Fragment {
         View buttonAddToPlaylist = view.findViewById(R.id.button_add_to_playlist);
         buttonListen = view.findViewById(R.id.button_listen);
         buttonRead = view.findViewById(R.id.button_read);
+        buttonChapterDropdown = view.findViewById(R.id.button_chapter_dropdown);
+        textSelectedChapterName = view.findViewById(R.id.text_selected_chapter_name);
         buttonRateBook = view.findViewById(R.id.button_rate_book);
         textBookRating = view.findViewById(R.id.text_book_rating);
         textRatingCount = view.findViewById(R.id.text_rating_count);
@@ -90,10 +96,15 @@ public class BookDetailFragment extends Fragment {
         sectionRecommendedBooks = view.findViewById(R.id.section_recommended_books);
         textTitleSeriesBooks = view.findViewById(R.id.text_title_series_books);
 
+        if (buttonChapterDropdown != null) {
+            buttonChapterDropdown.setOnClickListener(v -> showChapterSelectorDialog());
+        }
+
         if (getArguments() != null) {
             currentBook = (Book) getArguments().getSerializable("book");
             if (currentBook != null) {
                 bindBookDetails(view);
+                setupChaptersSection();
                 setupRecommendationSections(view);
                 fetchRecommendationSections();
                 ratingViewModel.loadUserRating(currentBook.getId());
@@ -528,6 +539,100 @@ public class BookDetailFragment extends Fragment {
             }
         });
 
+        dialog.show();
+    }
+
+    private void setupChaptersSection() {
+        if (currentBook == null) return;
+
+        chapterList.clear();
+        if (currentBook.getChapters() != null && !currentBook.getChapters().isEmpty()) {
+            chapterList.addAll(currentBook.getChapters());
+            bindChaptersUI();
+        } else {
+            Book localBook = libraryViewModel.loadBookLocally(currentBook.getId());
+            if (localBook != null && localBook.getChapters() != null && !localBook.getChapters().isEmpty()) {
+                currentBook.setChapters(localBook.getChapters());
+                chapterList.addAll(localBook.getChapters());
+                bindChaptersUI();
+            } else {
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("books").document(currentBook.getId())
+                    .get().addOnSuccessListener(doc -> {
+                        if (isAdded() && doc.exists()) {
+                            List<String> cloudChapters = (List<String>) doc.get("chapters");
+                            if (cloudChapters != null && !cloudChapters.isEmpty()) {
+                                currentBook.setChapters(cloudChapters);
+                                chapterList.clear();
+                                chapterList.addAll(cloudChapters);
+                                bindChaptersUI();
+                            } else {
+                                generateDefaultChapters();
+                                bindChaptersUI();
+                            }
+                        } else {
+                            generateDefaultChapters();
+                            bindChaptersUI();
+                        }
+                    }).addOnFailureListener(e -> {
+                        generateDefaultChapters();
+                        bindChaptersUI();
+                    });
+            }
+        }
+    }
+
+    private void generateDefaultChapters() {
+        chapterList.clear();
+        int count = 8;
+        for (int i = 1; i <= count; i++) {
+            chapterList.add("Chapter " + i);
+        }
+        if (currentBook != null) currentBook.setChapters(chapterList);
+    }
+
+    private void bindChaptersUI() {
+        if (!isAdded() || textSelectedChapterName == null) return;
+
+        Map<String, Long> progressMap = libraryViewModel.getBookProgressChapter().getValue();
+        int currentChapterIndex = -1;
+        if (progressMap != null && currentBook != null && progressMap.containsKey(currentBook.getId())) {
+            Long savedChapter = progressMap.get(currentBook.getId());
+            if (savedChapter != null) currentChapterIndex = savedChapter.intValue() - 1;
+        }
+
+        if (currentChapterIndex >= 0 && currentChapterIndex < chapterList.size()) {
+            textSelectedChapterName.setText("Chapter " + (currentChapterIndex + 1) + " (Reading)");
+        } else {
+            textSelectedChapterName.setText("Select Chapter (" + chapterList.size() + " Chapters)...");
+        }
+    }
+
+    private void showChapterSelectorDialog() {
+        if (getContext() == null || currentBook == null) return;
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_chapter_selector, null);
+        dialog.setContentView(dialogView);
+
+        RecyclerView recycler = dialogView.findViewById(R.id.recycler_chapters);
+        recycler.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        Map<String, Long> progressMap = libraryViewModel.getBookProgressChapter().getValue();
+        int currentChapterIndex = -1;
+        if (progressMap != null && progressMap.containsKey(currentBook.getId())) {
+            Long savedChapter = progressMap.get(currentBook.getId());
+            if (savedChapter != null) currentChapterIndex = savedChapter.intValue() - 1;
+        }
+
+        com.example.fonoss.adapter.ChapterAdapter dialogAdapter = new com.example.fonoss.adapter.ChapterAdapter(chapterList, currentChapterIndex, chapterIndex -> {
+            dialog.dismiss();
+            Bundle bundle = new Bundle();
+            bundle.putSerializable("book", currentBook);
+            bundle.putInt("chapterIndex", chapterIndex);
+            Navigation.findNavController(requireView()).navigate(R.id.action_bookDetailFragment_to_ebookReaderFragment, bundle);
+        });
+
+        recycler.setAdapter(dialogAdapter);
         dialog.show();
     }
 }

@@ -111,7 +111,17 @@ public class AudioPlayerFragment extends Fragment {
                     libraryViewModel.markAsInProgress(currentBook);
                     
                     Map<String, Long> posMap = libraryViewModel.getBookProgressPos().getValue();
-                    if (!isPositionRestored && posMap != null && posMap.containsKey(currentBook.getId())) {
+                    if (getArguments() != null && getArguments().containsKey("chapterIndex")) {
+                        int targetChapterIndex = getArguments().getInt("chapterIndex");
+                        int totalChapters = (currentBook != null && currentBook.getChapters() != null && !currentBook.getChapters().isEmpty()) 
+                                            ? currentBook.getChapters().size() : 10;
+                        int totalDur = audioService.getTotalDuration();
+                        if (totalDur > 0 && totalChapters > 0) {
+                            int seekSec = (targetChapterIndex * totalDur) / totalChapters;
+                            audioService.seekTo(seekSec);
+                            isPositionRestored = true;
+                        }
+                    } else if (!isPositionRestored && posMap != null && posMap.containsKey(currentBook.getId())) {
                         Long savedPos = posMap.get(currentBook.getId());
                         if (savedPos != null) {
                             audioService.seekTo(savedPos.intValue());
